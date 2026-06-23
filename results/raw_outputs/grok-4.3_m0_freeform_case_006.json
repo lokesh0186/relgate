@@ -1,0 +1,38 @@
+{
+  "case_id": "case_006",
+  "case_type": "auth_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:45:53.585421+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce OAuth access token expiry from 24h to 1h to improve security posture per audit finding SEC-2024-031\nDiff / Config: # config/oauth-server.yaml\noauth:\n  issuer: https://auth.company.com\n  access_token:\n-   expiry: 86400\n+   expiry: 3600\n    signing_algorithm: RS256\n  refresh_token:\n    expiry: 604800\n    rotation: true\nService Context: identity-service (Java/Spring), serves all authenticated traffic. 1.2M active users, ~340k concurrent sessions at peak.\nDeployment Plan: deploy to prod\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/auth-service-overview showing token issuance rate, refresh rate, and error counts.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Token refresh traffic will increase ~24x. Refresh endpoint currently handles 14k req/h, expected 336k req/h post-change.\nBlast Radius: [not provided]\nValidation Evidence: Tested in staging environment for 1 hour with synthetic load. 0 auth errors observed. Refresh endpoint p99 stayed under 50ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: Reducing access token TTL from 24 h to 1 h is a straightforward security win, but the resulting 24\u00d7 increase in refresh traffic (14 k \u2192 336 k req/h) on a service that already handles 340 k concurrent sessions is a material capacity and reliability change. The bundle provides only a one-hour synthetic staging run, no load-test results at the projected volume, no rollback plan, and no alerting or ownership details. These gaps make the change high-risk for production.\n\nRisks_or_missing_information:\n- Refresh endpoint and downstream dependencies have not been validated at 336 k req/h; p99 latency and error rates under that load are unknown.\n- No rollback plan, capacity assessment, or blast-radius analysis is supplied despite the service being the sole authenticator for 1.2 M users.\n- Alerting, on-call ownership, and SLO impact review are absent; existing Grafana dashboard alone does not guarantee detection of a sudden spike in 429s or latency.\n\nRecommended_actions:\n- Run a controlled load test (or shadow/prod-canary) that sustains \u2265336 k refresh req/h for at least 30\u201360 min while monitoring error budget, CPU/memory, DB/connection-pool saturation, and downstream services.\n- Provide a tested rollback (e.g., feature flag or config revert), explicit owner/on-call rotation, and new alerts for refresh-endpoint error rate, latency, and queue depth before merge.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Traffic increase is large and unproven; mandatory pre-flight load validation and rollback plan are missing.",
+  "usage": {
+    "prompt_tokens": 576,
+    "completion_tokens": 690,
+    "total_tokens": 1266,
+    "cost": 0.0023106,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0023106,
+      "upstream_inference_prompt_cost": 0.0005856,
+      "upstream_inference_completions_cost": 0.001725
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 370,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002311,
+  "latency_seconds": 8.17,
+  "status": "ok",
+  "api_response_id": "gen-1782164745-0is42NyHI7gfSNnJBW3S"
+}

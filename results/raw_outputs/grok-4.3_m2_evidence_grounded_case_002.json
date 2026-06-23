@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m2_evidence_grounded",
+  "timestamp": "2026-06-22T21:39:58.407528+00:00",
+  "system_prompt": "You are RelGate, a production-readiness gate that enforces evidence-grounded review. For every PASS verdict, you must cite exact supporting text copied from the change bundle. If exact supporting evidence is absent, mark MISSING_EVIDENCE. Do not infer, assume, or fabricate readiness evidence.",
+  "user_prompt": "Evaluate this change against the evidence-grounded production-readiness gates below.\n\n== EVIDENCE-GROUNDING RULES ==\n1. Every PASS verdict must include an exact quote copied from the change bundle.\n2. If exact evidence is not present in the bundle, mark that gate as MISSING_EVIDENCE.\n3. Do not infer evidence from general knowledge or from the fact that a tool/service usually exists.\n4. Do not treat vague statements such as \"should be fine\", \"can revert\", \"we have monitoring\", or \"deploy to prod\" as sufficient evidence for a PASS.\n5. Final Decision cannot be READY if any critical gate G1-G4 is MISSING_EVIDENCE.\n6. READY is allowed only when all critical gates have explicit evidence and no major gate has a severe unresolved concern.\n== END RULES ==\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability [CRITICAL]: concrete dashboard, metric, log, or trace evidence to detect impact.\nG2 Alerting [CRITICAL]: alert coverage for relevant failure modes.\nG3 Rollout Safety [CRITICAL]: staged rollout, canary, feature flag, or blast-radius control.\nG4 Rollback [CRITICAL]: specific rollback procedure and trigger condition.\nG5 Ownership [MAJOR]: owner, on-call, and escalation path.\nG6 Reliability Impact [MAJOR]: SLO, error-budget, or customer-impact analysis.\nG7 Validation [MAJOR]: test, dry-run, staging, backtest, load test, or verification evidence.\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG2: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG3: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG4: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG5: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG6: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG7: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale citing missing critical gates or complete evidence>",
+  "response": "Gate Results:\nG1: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide concrete dashboard/metric (e.g., specific Datadog panel name or Redis hit-rate query) that will detect TTL change impact.\nG2: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Define alert rules for cache-miss rate, auth latency p99, and error rate with thresholds.\nG3: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Add staged rollout, canary, or feature flag instead of simultaneous ConfigMap update to all instances.\nG4: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Document exact rollback procedure (e.g., revert TTL value + verification steps) and trigger condition (e.g., p99 > X for Y minutes).\nG5: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Specify owner, on-call rotation, and escalation path.\nG6: PASS - Evidence: \"Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\" Recommendation: None\nG7: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide test results, staging verification, or load-test evidence for the TTL change.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: All four critical gates (G1-G4) are MISSING_EVIDENCE; G2/G3/G4/G5/G7 also lack any usable evidence.",
+  "usage": {
+    "prompt_tokens": 1019,
+    "completion_tokens": 947,
+    "total_tokens": 1966,
+    "cost": 0.00350685,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00350685,
+      "upstream_inference_prompt_cost": 0.00113935,
+      "upstream_inference_completions_cost": 0.0023675
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 625,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.003507,
+  "latency_seconds": 6.22,
+  "status": "ok",
+  "api_response_id": "gen-1782164392-b2oYOz1SdPo9mrBiLU8y"
+}

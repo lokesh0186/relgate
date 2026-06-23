@@ -1,0 +1,26 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "change_summary": "Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.",
+  "diff_or_config": "--- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10",
+  "service_context": "notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.",
+  "deployment_plan": "Update config and restart workers.",
+  "rollback_plan": "Set concurrency back to 5 if issues arise.",
+  "observability_evidence": "CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "",
+  "slo_reliability_impact": "",
+  "blast_radius": "",
+  "validation_evidence": "",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G3", "description": "No staged rollout - all workers restart at once with 4x concurrency", "severity": "critical"},
+      {"gate": "G4", "description": "Rollback plan is vague - no trigger condition specified", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting for downstream rate limits, worker errors, or resource exhaustion", "severity": "critical"},
+      {"gate": "G5", "description": "No owner or on-call identified", "severity": "major"},
+      {"gate": "G6", "description": "No SLO or customer impact assessment for 4x throughput increase", "severity": "major"},
+      {"gate": "G7", "description": "No load test or staging validation for 20-worker concurrency", "severity": "major"}
+    ]
+  }
+}

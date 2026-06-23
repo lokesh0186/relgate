@@ -1,0 +1,25 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "change_summary": "Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)",
+  "diff_or_config": "# redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379",
+  "service_context": "auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.",
+  "deployment_plan": "Deploy config change to all auth-service instances simultaneously via ConfigMap update.",
+  "rollback_plan": "can revert config",
+  "observability_evidence": "We have Datadog for monitoring.",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "",
+  "slo_reliability_impact": "Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.",
+  "blast_radius": "All authenticated users. Downstream services: order-service, profile-service, notification-service.",
+  "validation_evidence": "",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G3", "description": "All-at-once deployment with no staged rollout for high-impact cache change", "severity": "critical"},
+      {"gate": "G4", "description": "Rollback plan is vague ('can revert config') with no specific steps or timing", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting evidence for cache miss rate or auth latency degradation", "severity": "critical"},
+      {"gate": "G5", "description": "No owner or on-call identified for the change", "severity": "major"},
+      {"gate": "G7", "description": "No validation or testing evidence provided", "severity": "major"}
+    ]
+  }
+}

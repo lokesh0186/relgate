@@ -1,0 +1,24 @@
+{
+  "case_id": "case_006",
+  "case_type": "auth_configuration",
+  "change_summary": "Reduce OAuth access token expiry from 24h to 1h to improve security posture per audit finding SEC-2024-031",
+  "diff_or_config": "# config/oauth-server.yaml\noauth:\n  issuer: https://auth.company.com\n  access_token:\n-   expiry: 86400\n+   expiry: 3600\n    signing_algorithm: RS256\n  refresh_token:\n    expiry: 604800\n    rotation: true",
+  "service_context": "identity-service (Java/Spring), serves all authenticated traffic. 1.2M active users, ~340k concurrent sessions at peak.",
+  "deployment_plan": "deploy to prod",
+  "rollback_plan": "",
+  "observability_evidence": "Grafana dashboard: grafana.internal/d/auth-service-overview showing token issuance rate, refresh rate, and error counts.",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "",
+  "slo_reliability_impact": "Token refresh traffic will increase ~24x. Refresh endpoint currently handles 14k req/h, expected 336k req/h post-change.",
+  "blast_radius": "",
+  "validation_evidence": "Tested in staging environment for 1 hour with synthetic load. 0 auth errors observed. Refresh endpoint p99 stayed under 50ms.",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G3", "description": "No staged rollout plan; 'deploy to prod' gives no progressive delivery strategy", "severity": "critical"},
+      {"gate": "G4", "description": "No rollback plan for reverting token expiry if refresh endpoint saturates", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting for refresh endpoint saturation or auth failure spike", "severity": "critical"},
+      {"gate": "G5", "description": "No owner or on-call team identified for the change", "severity": "major"}
+    ]
+  }
+}

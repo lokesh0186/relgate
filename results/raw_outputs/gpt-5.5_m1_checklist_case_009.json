@@ -1,0 +1,38 @@
+{
+  "case_id": "case_009",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:52:06.966044+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.\nDiff / Config: --- a/flags/payments.yaml\n+++ b/flags/payments.yaml\n@@ -1,5 +1,5 @@\n new_payment_flow:\n   enabled: true\n-  rollout_percentage: 5\n+  rollout_percentage: 100\n   targeting:\n     - all_users\nService Context: checkout-service processes $2M daily GMV. New payment flow uses Stripe v2 API with different error handling. 5% rollout showed 0.1% higher failure rate than v1.\nDeployment Plan: Update feature flag config to 100%. Immediate effect, no deployment needed.\nRollback Plan: [not provided]\nObservability Evidence: Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.\nAlerting Evidence: Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: All checkout users globally, $2M daily GMV at risk\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - Includes concrete Grafana dashboard for payment success rate and Stripe webhook latency panel to detect impact.\nG2: PASS - Includes alerts for payment failure rate and checkout latency, covering primary checkout failure modes.\nG3: FAIL - Change moves from 5% directly to 100% globally with immediate effect; no staged rollout, canary step, or blast-radius control is provided.\nG4: FAIL - Rollback plan is not provided, and no rollback trigger condition is defined.\nG5: FAIL - Owner, on-call, and escalation path are not provided.\nG6: PASS - Customer-impact risk is stated: all checkout users globally and $2M daily GMV at risk; prior 5% rollout showed 0.1% higher failure rate.\nG7: PASS - Prior 5% rollout for 1 week provides validation evidence, including measured 0.1% higher failure rate versus v1.\n\nRecommended_actions:\n- Add a staged rollout plan, e.g. 10% -> 25% -> 50% -> 100%, with hold times and success criteria based on payment success rate, latency, and Stripe webhook health.\n- Provide an explicit rollback plan and trigger, identify owner/on-call/escalation path, and define acceptable failure-rate/SLO thresholds before increasing rollout.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change affects all checkout users and $2M daily GMV, with known higher failure rate at 5%, but lacks staged rollout safety, rollback plan, and ownership/escalation details.",
+  "usage": {
+    "prompt_tokens": 615,
+    "completion_tokens": 844,
+    "total_tokens": 1459,
+    "cost": 0.028395,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.028395,
+      "upstream_inference_prompt_cost": 0.003075,
+      "upstream_inference_completions_cost": 0.02532
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 516,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.028395,
+  "latency_seconds": 13.61,
+  "status": "ok",
+  "api_response_id": "gen-1782165113-ZW7IeYs5IJ9HNgCmccrI"
+}

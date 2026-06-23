@@ -1,0 +1,38 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:49:53.510056+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.\nDiff / Config: --- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10\nService Context: notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.\nDeployment Plan: Update config and restart workers.\nRollback Plan: Set concurrency back to 5 if issues arise.\nObservability Evidence: CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The proposed 4x increase in SQS worker concurrency lacks any evidence of load testing, downstream capacity validation, or resource profiling, despite touching a service that drives all user notifications. The deployment and rollback plans are manual and minimal, with no mention of rate limiting, error budgets, or how the change interacts with existing visibility_timeout/batch_size settings. Multiple critical production fields (alerting, SLO impact, blast radius, on-call ownership, validation results) are explicitly absent from the bundle.\n\nRisks_or_missing_information:\n- Downstream email/push/SMS providers may experience sudden 4x traffic spikes, hitting undocumented rate limits, increasing costs, or causing throttling that the current 200ms/msg average does not reveal.\n- No evidence of per-worker CPU/memory limits, connection pool sizing, or observability for new failure modes (e.g., increased SQS errors, duplicate processing, or visibility timeout exhaustion) under higher concurrency.\n- Missing alerting, SLOs, blast radius assessment, owner/on-call details, and any pre-deployment validation or gradual rollout plan.\n\nRecommended_actions:\n- Perform a controlled canary (e.g., 8 then 12 then 20 workers) with explicit monitoring of downstream provider error rates, latency, and costs before full rollout.\n- Add or confirm alerts for SQS ApproximateNumberOfMessagesVisible, provider-specific error metrics, and worker resource saturation; document blast radius and on-call escalation before shipping.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Too many unaddressed production risks and absent evidence make the change unsafe to deploy as described.",
+  "usage": {
+    "prompt_tokens": 538,
+    "completion_tokens": 819,
+    "total_tokens": 1357,
+    "cost": 0.0025856,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0025856,
+      "upstream_inference_prompt_cost": 0.0005381,
+      "upstream_inference_completions_cost": 0.0020475
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 498,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002586,
+  "latency_seconds": 7.53,
+  "status": "ok",
+  "api_response_id": "gen-1782164986-hOYY5fIbgT3xkSH4fcCy"
+}

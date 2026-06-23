@@ -1,0 +1,38 @@
+{
+  "case_id": "case_010",
+  "case_type": "k8s_hpa_scaling",
+  "expected_decision": "READY",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:54:32.667194+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Add Horizontal Pod Autoscaler to catalog-service targeting 65% CPU utilization, min 4 replicas, max 16 replicas. This replaces manual scaling during peak traffic.\nDiff / Config: --- a/k8s/catalog-service/hpa.yaml\n+++ b/k8s/catalog-service/hpa.yaml\n@@ -0,0 +1,15 @@\n+apiVersion: autoscaling/v2\n+kind: HorizontalPodAutoscaler\n+metadata:\n+  name: catalog-service-hpa\n+  namespace: production\n+spec:\n+  scaleTargetRef:\n+    apiVersion: apps/v1\n+    kind: Deployment\n+    name: catalog-service\n+  minReplicas: 4\n+  maxReplicas: 16\n+  metrics:\n+  - type: Resource\n+    resource:\n+      name: cpu\n+      target:\n+        type: Utilization\n+        averageUtilization: 65\nService Context: catalog-service serves product catalog API to web and mobile apps. Current steady-state: 6 pods. Peak: manually scaled to 12 pods for sales events. 8k RPM average, 25k RPM peak.\nDeployment Plan: Phased rollout: (1) Apply HPA to staging and run 2-hour load test simulating 3x traffic. (2) Apply HPA to prod cluster with minReplicas=4 matching current baseline during low-traffic window (Tuesday 2am UTC). (3) Monitor for 48 hours before next sale event.\nRollback Plan: Rollback trigger: if p99 latency exceeds 800ms for 3 consecutive minutes or error rate exceeds 0.5% for 2 minutes, delete the HPA resource via 'kubectl delete hpa catalog-service-hpa -n production' which reverts to static replica count of 6.\nObservability Evidence: Grafana dashboard: grafana.internal/d/catalog-svc-perf (panels: pod count, CPU utilization, p99 latency, error rate, HPA scaling events). CloudWatch Container Insights enabled for EKS cluster. HPA events visible in kubectl describe hpa.\nAlerting Evidence: Existing alerts: catalog_p99_latency > 500ms (warning) and > 800ms (critical) via PagerDuty. New alert added: catalog_hpa_at_max_replicas fires if HPA reaches maxReplicas for >10min. Pod OOMKill alert unchanged.\nOwner / On-Call: Owner: platform-engineering team. On-call: @platform-oncall PagerDuty rotation (primary + secondary). Escalation: platform-lead -> VP Engineering. Change author: Priya Mehta (platform-eng).\nSLO / Reliability Impact: catalog-service SLO: 99.9% availability, p99 < 400ms. This change should improve SLO compliance during peak by auto-scaling. Risk: if HPA thrashes (rapid scale up/down), brief latency spikes possible. Error budget consumption: currently 12% used this quarter, acceptable risk.\nBlast Radius: catalog-service only (no downstream dependencies affected by replica count change). Minimum 4 replicas ensures no under-provisioning. Maximum 16 replicas bounded to prevent runaway cost.\nValidation Evidence: Load test in staging: simulated 30k RPM (3x peak) for 2 hours. HPA scaled from 4 to 11 replicas. p99 remained < 350ms. Scale-down took 5min after load drop. No OOMKills. kubectl diff confirms only HPA resource added.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS | Grafana dashboard + CloudWatch + HPA events explicitly listed with relevant panels\nG2: PASS | Existing p99/error alerts + new maxReplicas alert cover key failure modes\nG3: PASS | Explicit staged rollout (staging load test then low-traffic prod apply) + bounded blast radius\nG4: PASS | Concrete triggers (p99>800ms 3min / error>0.5% 2min) + exact kubectl delete rollback\nG5: PASS | Owner, on-call rotation, and escalation path all named\nG6: PASS | SLO, error budget %, and scaling-thrash risk explicitly stated\nG7: PASS | Staging load-test results (30k RPM, scale to 11, p99<350ms) + kubectl diff provided\n\nRecommended_actions:\n- Add explicit post-rollback verification step (e.g., confirm replica count returns to 6 and traffic resumes)\n- Capture HPA scale-up/down event logs in the runbook for the 48-hour observation window\n\nFinal Decision: READY\nDecision Rationale: All seven gates satisfied with concrete evidence; change is low-risk and well-instrumented.",
+  "usage": {
+    "prompt_tokens": 1177,
+    "completion_tokens": 709,
+    "total_tokens": 1886,
+    "cost": 0.00310935,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00310935,
+      "upstream_inference_prompt_cost": 0.00133685,
+      "upstream_inference_completions_cost": 0.0017725
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 471,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.003109,
+  "latency_seconds": 5.03,
+  "status": "ok",
+  "api_response_id": "gen-1782165267-NqiWHFg0blmbJmaX4q3j"
+}

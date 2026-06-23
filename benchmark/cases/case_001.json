@@ -1,0 +1,23 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "change_summary": "Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table",
+  "diff_or_config": "-- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);",
+  "service_context": "order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.",
+  "deployment_plan": "Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.",
+  "rollback_plan": "",
+  "observability_evidence": "pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "order-team, #order-oncall Slack channel, @jsmith primary on-call",
+  "slo_reliability_impact": "should be fine",
+  "blast_radius": "",
+  "validation_evidence": "Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G4", "description": "No rollback plan specified for schema migration", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting configured for migration failure or query latency spike", "severity": "critical"},
+      {"gate": "G6", "description": "SLO impact assessment is vague ('should be fine') with no quantitative analysis", "severity": "major"}
+    ]
+  }
+}

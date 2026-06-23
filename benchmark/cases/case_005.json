@@ -1,0 +1,24 @@
+{
+  "case_id": "case_005",
+  "case_type": "routing_change",
+  "change_summary": "Shift /api/v2/* traffic from legacy-api backend to new api-v2-service via nginx ingress annotation update",
+  "diff_or_config": "# k8s/ingress/api-gateway.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: api-gateway\n  annotations:\n    nginx.ingress.kubernetes.io/canary: \"true\"\n    nginx.ingress.kubernetes.io/canary-weight: \"10\"\nspec:\n  rules:\n  - host: api.company.com\n    http:\n      paths:\n      - path: /api/v2\n-       backend:\n-         service: legacy-api\n-         port: 8080\n+       backend:\n+         service: api-v2-service\n+         port: 8080",
+  "service_context": "api-gateway (nginx ingress controller), serves 10k RPM. /api/v2 handles ~3.2k RPM from mobile clients and 2 internal services.",
+  "deployment_plan": "Canary rollout: 10% traffic for 30min, then 50% for 1h, then 100% if error rate stays below 0.1%.",
+  "rollback_plan": "",
+  "observability_evidence": "",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "platform-team owns ingress. On-call: @platform-oncall in #platform-incidents",
+  "slo_reliability_impact": "",
+  "blast_radius": "All /api/v2 consumers: mobile app (iOS/Android), order-service, notification-service.",
+  "validation_evidence": "api-v2-service passes full integration test suite. Load tested at 5k RPM with p99 < 80ms.",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G4", "description": "No rollback plan for reverting traffic if new backend fails", "severity": "critical"},
+      {"gate": "G1", "description": "No observability evidence for monitoring the new backend during canary", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting configured for error rate or latency on new routing path", "severity": "critical"},
+      {"gate": "G6", "description": "No SLO or reliability impact assessment for routing change", "severity": "major"}
+    ]
+  }
+}

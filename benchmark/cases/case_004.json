@@ -1,0 +1,25 @@
+{
+  "case_id": "case_004",
+  "case_type": "infrastructure_change",
+  "change_summary": "Upgrade RDS instance class from db.r5.large to db.r5.2xlarge for payments-db to address CPU saturation during peak",
+  "diff_or_config": "# terraform/modules/rds/payments.tf\nresource \"aws_db_instance\" \"payments_db\" {\n-  instance_class    = \"db.r5.large\"\n+  instance_class    = \"db.r5.2xlarge\"\n   engine            = \"postgres\"\n   engine_version    = \"14.8\"\n   multi_az          = true\n   storage_encrypted = true\n   allocated_storage = 500\n}",
+  "service_context": "payments-db (PostgreSQL 14.8, Multi-AZ), serves payment-service. Processes ~$2.1M transactions/day. Current CPU peaks at 89%.",
+  "deployment_plan": "terraform apply",
+  "rollback_plan": "can downgrade",
+  "observability_evidence": "CloudWatch RDS dashboard: console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=payments-rds",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "DBA team owns payments-db. On-call channel: #dba-oncall. Primary: @dba-lead",
+  "slo_reliability_impact": "",
+  "blast_radius": "",
+  "validation_evidence": "",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G3", "description": "No staged rollout plan; 'terraform apply' causes immediate instance modification with downtime", "severity": "critical"},
+      {"gate": "G4", "description": "Rollback plan is vague ('can downgrade') with no procedure for instance class revert", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting for connection failures or latency during instance modification", "severity": "critical"},
+      {"gate": "G7", "description": "No validation evidence; change not tested in non-production", "severity": "major"},
+      {"gate": "G6", "description": "No SLO impact assessment for expected downtime during modification", "severity": "major"}
+    ]
+  }
+}

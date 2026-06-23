@@ -1,0 +1,38 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:48:45.777319+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.\nDiff / Config: --- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code\nService Context: search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.\nDeployment Plan: Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.\nRollback Plan: [not provided]\nObservability Evidence: Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.\nAlerting Evidence: [not provided]\nOwner / On-Call: observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary\nSLO / Reliability Impact: [not provided]\nBlast Radius: search-service only, 12 pods across 2 AZs\nValidation Evidence: Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - The bundle includes concrete dashboard/metric evidence (Log volume dashboard: grafana.internal/d/search-log-volume and Fluentd pipeline metrics in CloudWatch) to detect impact.\nG2: FAIL - The bundle does not include alert coverage for failure modes related to the change (e.g., log volume increase, Fluentd backpressure, ES ingestion issues).\nG3: PASS - The bundle includes a staged rollout plan using a feature flag (5% of pods -> 25% -> 100% over 3 days) to control blast radius.\nG4: FAIL - The bundle does not include a specific rollback plan with trigger condition.\nG5: PASS - The bundle identifies owner (observability-team), on-call (Slack: @obs-oncall), and escalation path (PagerDuty rotation: obs-primary).\nG6: FAIL - The bundle does not state SLO, error-budget, or customer-impact risk related to the change.\nG7: PASS - The bundle includes validation evidence (tested in staging with 10% sampling for 24h, no Fluentd backpressure, ES ingestion stable).\n\nRecommended_actions:\n- Provide alert coverage for potential failure modes (e.g., log volume increase, Fluentd backpressure, ES ingestion issues).\n- Include a specific rollback plan with trigger condition in case the change causes issues.\n- State SLO, error-budget, or customer-impact risk related to the change.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle is missing critical information and plans for alerting, rollback, and reliability impact, which are necessary for a safe and reliable deployment.",
+  "usage": {
+    "prompt_tokens": 639,
+    "completion_tokens": 332,
+    "total_tokens": 971,
+    "cost": 0.00029505,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00029505,
+      "upstream_inference_prompt_cost": 9.585e-05,
+      "upstream_inference_completions_cost": 0.0001992
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000295,
+  "latency_seconds": 17.53,
+  "status": "ok",
+  "api_response_id": "gen-1782164909-KI1A4A9alyPFDXx4KCz3"
+}

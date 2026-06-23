@@ -1,0 +1,38 @@
+{
+  "case_id": "case_012",
+  "case_type": "cdn_dns_routing",
+  "expected_decision": "READY",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:58:50.296863+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Add CloudFront distribution for static assets (images, JS, CSS) served by storefront-service. DNS CNAME will point assets.example.com to CloudFront. Origin remains the existing S3 bucket with 1-hour cache TTL.\nDiff / Config: --- a/terraform/cdn.tf\n+++ b/terraform/cdn.tf\n@@ -0,0 +1,22 @@\n+resource \"aws_cloudfront_distribution\" \"assets\" {\n+  origin {\n+    domain_name = aws_s3_bucket.assets.bucket_regional_domain_name\n+    origin_id   = \"S3-assets\"\n+  }\n+  enabled             = true\n+  default_cache_behavior {\n+    allowed_methods  = [\"GET\", \"HEAD\"]\n+    cached_methods   = [\"GET\", \"HEAD\"]\n+    target_origin_id = \"S3-assets\"\n+    viewer_protocol_policy = \"redirect-to-https\"\n+    default_ttl      = 3600\n+    max_ttl          = 86400\n+  }\n+  restrictions {\n+    geo_restriction { restriction_type = \"none\" }\n+  }\n+  viewer_certificate {\n+    acm_certificate_arn = var.assets_cert_arn\n+    ssl_support_method  = \"sni-only\"\n+  }\n+}\n+\n+resource \"aws_route53_record\" \"assets_cname\" {\n+  zone_id = var.zone_id\n+  name    = \"assets.example.com\"\n+  type    = \"CNAME\"\n+  ttl     = 300\n+  records = [aws_cloudfront_distribution.assets.domain_name]\n+}\nService Context: storefront-service is the customer-facing e-commerce frontend. Static assets currently served directly from S3 (avg 2k requests/sec). Adding CDN to reduce latency for global customers and offload origin.\nDeployment Plan: Phased: (1) Deploy CloudFront distribution with DNS pointing to CF but weight=0 in Route53 weighted record set. (2) Shift 10% traffic to CDN for 24h monitoring. (3) Shift to 100% after validation. Current step: deploying CF resource (weight=0, no traffic until step 2).\nRollback Plan: Rollback trigger: if origin error rate > 1% or CDN cache-miss rate > 80% sustained for 10min during traffic shift. Rollback action: set Route53 weighted record to weight=0 for CloudFront (TTL=300, propagates in 5min). If CloudFront itself is unhealthy, delete CNAME record. Terraform state allows 'terraform apply' with distribution disabled.\nObservability Evidence: CloudFront real-time metrics in CloudWatch: requests, error rate, cache hit ratio, origin latency. Grafana dashboard: grafana.internal/d/storefront-cdn (panels: CDN hit ratio, origin bandwidth, p50/p95/p99 latency by edge location). S3 access logs enabled for origin request auditing.\nAlerting Evidence: New alerts added: cloudfront_5xx_rate > 1% for 5min (PagerDuty critical), cloudfront_origin_latency > 2s for 5min (PagerDuty warning), cache_hit_ratio < 50% for 30min (Slack #cdn-alerts). Existing storefront availability alert unchanged.\nOwner / On-Call: Owner: frontend-infrastructure team. On-call: @frontend-infra-oncall PagerDuty rotation. Escalation: infra-lead (David Park) -> VP Platform. Change author: Sam Torres (frontend-infra). DNS changes reviewed by network-team.\nSLO / Reliability Impact: storefront-service SLO: 99.9% availability, LCP < 2.5s. CDN expected to improve LCP by 30-50% for non-US users. Risk: cache misconfiguration could serve stale assets (mitigated by 1h TTL and instant invalidation capability). No error budget risk\u2014additive improvement.\nBlast Radius: Static assets only (images, JS, CSS). Dynamic API requests unaffected. Initial deployment at weight=0 means zero production traffic risk. Even at 100%, worst case is CDN failure falls through to origin S3 bucket (existing path).\nValidation Evidence: Terraform plan reviewed: only creates new resources, no modifications to existing. ACM certificate validated (DNS validation complete). Staging environment CDN tested for 7 days with synthetic traffic: 94% cache hit ratio, p99 latency 45ms (vs 180ms origin). curl tests confirm HTTPS, headers, and cache behavior correct.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle appears to be mostly production-ready, introducing a CloudFront distribution to serve static assets for the storefront-service, with a phased deployment plan and rollback strategy in place. However, there are some concerns and missing information that need to be addressed before deployment.\n\nRisks_or_missing_information:\n- The change bundle does not provide explicit evidence of testing for the behavior of CloudFront when the origin S3 bucket is unavailable or returns errors.\n- There is no clear indication of how the cache invalidation capability will be exercised or validated in production.\n- The alerting configuration for cache_hit_ratio < 50% for 30min is sent to Slack #cdn-alerts, but it's unclear if this is monitored 24/7 or if there's an on-call rotation responsible for responding to these alerts.\n- The change bundle does not specify the expected cache hit ratio or origin latency thresholds for the production traffic.\n\nRecommended_actions:\n- Validate CloudFront behavior when the origin S3 bucket is unavailable or returns errors.\n- Document and test the cache invalidation capability to ensure it works as expected.\n- Clarify the monitoring and response plan for the cache_hit_ratio alert sent to Slack #cdn-alerts.\n- Establish clear expectations for cache hit ratio and origin latency thresholds for production traffic.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: While the change bundle is well-structured and provides a clear deployment plan, there are some critical gaps in testing and validation that need to be addressed before deploying to production. Specifically, the behavior of CloudFront under origin failure and the cache invalidation capability need to be validated. Additionally, the alerting configuration for cache hit ratio needs to be reviewed to ensure it is properly monitored and responded to.",
+  "usage": {
+    "prompt_tokens": 1130,
+    "completion_tokens": 350,
+    "total_tokens": 1480,
+    "cost": 0.0007455,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0007455,
+      "upstream_inference_prompt_cost": 0.0003955,
+      "upstream_inference_completions_cost": 0.00035
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000745,
+  "latency_seconds": 6.03,
+  "status": "ok",
+  "api_response_id": "gen-1782165524-NIA8RbGSlHlAHAZQ9Rnj"
+}

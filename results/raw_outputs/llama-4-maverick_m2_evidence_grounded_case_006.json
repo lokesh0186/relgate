@@ -1,0 +1,38 @@
+{
+  "case_id": "case_006",
+  "case_type": "auth_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m2_evidence_grounded",
+  "timestamp": "2026-06-22T21:47:23.237336+00:00",
+  "system_prompt": "You are RelGate, a production-readiness gate that enforces evidence-grounded review. For every PASS verdict, you must cite exact supporting text copied from the change bundle. If exact supporting evidence is absent, mark MISSING_EVIDENCE. Do not infer, assume, or fabricate readiness evidence.",
+  "user_prompt": "Evaluate this change against the evidence-grounded production-readiness gates below.\n\n== EVIDENCE-GROUNDING RULES ==\n1. Every PASS verdict must include an exact quote copied from the change bundle.\n2. If exact evidence is not present in the bundle, mark that gate as MISSING_EVIDENCE.\n3. Do not infer evidence from general knowledge or from the fact that a tool/service usually exists.\n4. Do not treat vague statements such as \"should be fine\", \"can revert\", \"we have monitoring\", or \"deploy to prod\" as sufficient evidence for a PASS.\n5. Final Decision cannot be READY if any critical gate G1-G4 is MISSING_EVIDENCE.\n6. READY is allowed only when all critical gates have explicit evidence and no major gate has a severe unresolved concern.\n== END RULES ==\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability [CRITICAL]: concrete dashboard, metric, log, or trace evidence to detect impact.\nG2 Alerting [CRITICAL]: alert coverage for relevant failure modes.\nG3 Rollout Safety [CRITICAL]: staged rollout, canary, feature flag, or blast-radius control.\nG4 Rollback [CRITICAL]: specific rollback procedure and trigger condition.\nG5 Ownership [MAJOR]: owner, on-call, and escalation path.\nG6 Reliability Impact [MAJOR]: SLO, error-budget, or customer-impact analysis.\nG7 Validation [MAJOR]: test, dry-run, staging, backtest, load test, or verification evidence.\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce OAuth access token expiry from 24h to 1h to improve security posture per audit finding SEC-2024-031\nDiff / Config: # config/oauth-server.yaml\noauth:\n  issuer: https://auth.company.com\n  access_token:\n-   expiry: 86400\n+   expiry: 3600\n    signing_algorithm: RS256\n  refresh_token:\n    expiry: 604800\n    rotation: true\nService Context: identity-service (Java/Spring), serves all authenticated traffic. 1.2M active users, ~340k concurrent sessions at peak.\nDeployment Plan: deploy to prod\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/auth-service-overview showing token issuance rate, refresh rate, and error counts.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Token refresh traffic will increase ~24x. Refresh endpoint currently handles 14k req/h, expected 336k req/h post-change.\nBlast Radius: [not provided]\nValidation Evidence: Tested in staging environment for 1 hour with synthetic load. 0 auth errors observed. Refresh endpoint p99 stayed under 50ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG2: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG3: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG4: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG5: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG6: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG7: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale citing missing critical gates or complete evidence>",
+  "response": "Gate Results:\nG1: PASS - Evidence: \"Grafana dashboard: grafana.internal/d/auth-service-overview showing token issuance rate, refresh rate, and error counts.\" Recommendation: None\nG2: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide alerting evidence for relevant failure modes.\nG3: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide evidence of staged rollout, canary, feature flag, or blast-radius control.\nG4: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide specific rollback procedure and trigger condition.\nG5: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide owner, on-call, and escalation path.\nG6: PASS - Evidence: \"Token refresh traffic will increase ~24x. Refresh endpoint currently handles 14k req/h, expected 336k req/h post-change.\" Recommendation: None\nG7: PASS - Evidence: \"Tested in staging environment for 1 hour with synthetic load. 0 auth errors observed. Refresh endpoint p99 stayed under 50ms.\" Recommendation: None\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Critical gates G2, G3, and G4 are missing evidence, making the change not ready for production deployment. Specifically, alerting evidence, rollout safety measures, and a rollback plan are required before proceeding.",
+  "usage": {
+    "prompt_tokens": 945,
+    "completion_tokens": 297,
+    "total_tokens": 1242,
+    "cost": 0.0006723,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0006723,
+      "upstream_inference_prompt_cost": 0.00033075,
+      "upstream_inference_completions_cost": 0.00034155
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000672,
+  "latency_seconds": 4.43,
+  "status": "ok",
+  "api_response_id": "gen-1782164839-Q0Gj30gzc6jcLqgT4VEd"
+}

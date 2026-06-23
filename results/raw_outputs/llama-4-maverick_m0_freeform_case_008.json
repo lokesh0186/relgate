@@ -1,0 +1,38 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:50:13.714063+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.\nDiff / Config: --- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10\nService Context: notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.\nDeployment Plan: Update config and restart workers.\nRollback Plan: Set concurrency back to 5 if issues arise.\nObservability Evidence: CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle proposes increasing the concurrency of the notification-service SQS consumer from 5 to 20 workers to reduce the message processing backlog. However, the bundle lacks critical information necessary to assess the production readiness of this change. Key gaps include alerting evidence, SLO/reliability impact, blast radius, and validation evidence. Without this information, it's challenging to determine the potential risks and consequences of this change.\n\nRisks_or_missing_information:\n- Lack of alerting evidence to understand current monitoring and alerting setup for the notification-service.\n- No information on SLO/reliability impact, making it difficult to assess how this change affects service reliability and user experience.\n- Blast radius is not provided, which is crucial for understanding the potential impact of this change on other services or systems.\n- Validation evidence is missing, so it's unclear if the change has been tested or validated in a non-production environment.\n- Potential downstream provider overload or rate limiting issues with increased concurrency.\n\nRecommended_actions:\n- Provide alerting evidence to ensure that monitoring and alerting are in place to detect potential issues with the increased concurrency.\n- Assess and document the SLO/reliability impact of this change to understand its effects on service reliability and user experience.\n- Evaluate and document the blast radius to understand the potential impact on other services or systems.\n- Include validation evidence to demonstrate that the change has been tested and validated in a non-production environment.\n- Consider adding a gradual rollout or canary deployment to mitigate potential risks.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary to assess production readiness, and there are potential risks associated with increasing concurrency without proper validation, monitoring, and understanding of the impact on downstream providers and overall system reliability.",
+  "usage": {
+    "prompt_tokens": 427,
+    "completion_tokens": 353,
+    "total_tokens": 780,
+    "cost": 0.00027585,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00027585,
+      "upstream_inference_prompt_cost": 6.405e-05,
+      "upstream_inference_completions_cost": 0.0002118
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000276,
+  "latency_seconds": 20.2,
+  "status": "ok",
+  "api_response_id": "gen-1782164993-2J97cFK0Ix1cJOjezJHX"
+}

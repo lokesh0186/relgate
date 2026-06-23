@@ -1,0 +1,38 @@
+{
+  "case_id": "case_006",
+  "case_type": "auth_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:46:24.794326+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce OAuth access token expiry from 24h to 1h to improve security posture per audit finding SEC-2024-031\nDiff / Config: # config/oauth-server.yaml\noauth:\n  issuer: https://auth.company.com\n  access_token:\n-   expiry: 86400\n+   expiry: 3600\n    signing_algorithm: RS256\n  refresh_token:\n    expiry: 604800\n    rotation: true\nService Context: identity-service (Java/Spring), serves all authenticated traffic. 1.2M active users, ~340k concurrent sessions at peak.\nDeployment Plan: deploy to prod\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/auth-service-overview showing token issuance rate, refresh rate, and error counts.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Token refresh traffic will increase ~24x. Refresh endpoint currently handles 14k req/h, expected 336k req/h post-change.\nBlast Radius: [not provided]\nValidation Evidence: Tested in staging environment for 1 hour with synthetic load. 0 auth errors observed. Refresh endpoint p99 stayed under 50ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The proposed change reduces OAuth access token expiry from 24h to 1h, which may increase token refresh traffic significantly. While some testing was done in staging, there are concerns regarding the production readiness of this change. The change bundle lacks critical information necessary for a thorough review. Key risks and gaps need to be addressed before deploying to production.\n\nRisks_or_missing_information:\n- The change bundle does not provide a rollback plan, which is critical for a high-risk change like this.\n- There is no information on alerting evidence or on-call/owner details, making it difficult to assess the team's preparedness for potential issues.\n- The blast radius of the change is not specified, which could be significant given the service's critical role in handling all authenticated traffic.\n- While the change was tested in staging, the test duration was only 1 hour, and it is unclear if the synthetic load accurately represented peak production conditions.\n- The expected increase in refresh traffic (~24x) could lead to unforeseen performance issues or errors not captured in the limited staging test.\n\nRecommended_actions:\n- Provide a detailed rollback plan to quickly revert the change if issues arise in production.\n- Include alerting evidence to demonstrate that the team is prepared to detect and respond to potential issues related to the increased token refresh rate.\n- Specify the blast radius and assess the potential impact on dependent services or users.\n- Conduct more extensive testing in staging, including longer test durations and more comprehensive load testing that simulates peak production conditions.\n- Ensure that the SLO/reliability impact is thoroughly understood and that the team is prepared for the increased load.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks essential information, and the proposed change carries significant risks that have not been adequately mitigated or assessed. Addressing these gaps is necessary before the change can be considered production-ready.",
+  "usage": {
+    "prompt_tokens": 463,
+    "completion_tokens": 376,
+    "total_tokens": 839,
+    "cost": 0.00029505,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00029505,
+      "upstream_inference_prompt_cost": 6.945e-05,
+      "upstream_inference_completions_cost": 0.0002256
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000295,
+  "latency_seconds": 30.95,
+  "status": "ok",
+  "api_response_id": "gen-1782164753-TdM3906oL7oe7kxcbtxd"
+}

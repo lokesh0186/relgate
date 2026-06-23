@@ -1,0 +1,38 @@
+{
+  "case_id": "case_005",
+  "case_type": "routing_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:44:13.319472+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Shift /api/v2/* traffic from legacy-api backend to new api-v2-service via nginx ingress annotation update\nDiff / Config: # k8s/ingress/api-gateway.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: api-gateway\n  annotations:\n    nginx.ingress.kubernetes.io/canary: \"true\"\n    nginx.ingress.kubernetes.io/canary-weight: \"10\"\nspec:\n  rules:\n  - host: api.company.com\n    http:\n      paths:\n      - path: /api/v2\n-       backend:\n-         service: legacy-api\n-         port: 8080\n+       backend:\n+         service: api-v2-service\n+         port: 8080\nService Context: api-gateway (nginx ingress controller), serves 10k RPM. /api/v2 handles ~3.2k RPM from mobile clients and 2 internal services.\nDeployment Plan: Canary rollout: 10% traffic for 30min, then 50% for 1h, then 100% if error rate stays below 0.1%.\nRollback Plan: [not provided]\nObservability Evidence: [not provided]\nAlerting Evidence: [not provided]\nOwner / On-Call: platform-team owns ingress. On-call: @platform-oncall in #platform-incidents\nSLO / Reliability Impact: [not provided]\nBlast Radius: All /api/v2 consumers: mobile app (iOS/Android), order-service, notification-service.\nValidation Evidence: api-v2-service passes full integration test suite. Load tested at 5k RPM with p99 < 80ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change attempts a weighted canary cutover of /api/v2 traffic (\u22485.2k RPM) by editing the single production Ingress to point at api-v2-service while adding canary annotations. The provided diff and context show no separate canary Ingress, no rollback procedure, no observability or alerting additions, and no stated SLO impact. Load-test and integration results exist for the new service, but nothing demonstrates production traffic behavior or safe reversion under the stated error-rate threshold.\n\nRisks_or_missing_information:\n- nginx canary annotations are applied directly to the sole api-gateway Ingress while simultaneously changing its backend; this configuration is invalid for progressive traffic splitting and risks sending 0% or 100% traffic immediately.\n- No rollback plan, no new dashboards/alerts for api-v2-service error rate/latency, and no SLO impact assessment are supplied despite a 5.2k RPM blast radius affecting mobile clients and two internal services.\n\nRecommended_actions:\n- Create a proper canary Ingress (api-gateway-canary) annotated with nginx.ingress.kubernetes.io/canary: \"true\" and canary-weight, leaving the stable Ingress untouched and pointing at legacy-api.\n- Add explicit rollback steps (revert Ingress, scale canary weight to 0), plus required dashboards and alerts for 5xx rate, p99 latency, and dependency health before any production weight is applied.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Critical configuration error plus absent operational controls make an uncontrolled or unrecoverable cutover likely.",
+  "usage": {
+    "prompt_tokens": 661,
+    "completion_tokens": 882,
+    "total_tokens": 1543,
+    "cost": 0.00289685,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00289685,
+      "upstream_inference_prompt_cost": 0.00069185,
+      "upstream_inference_completions_cost": 0.002205
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 570,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002897,
+  "latency_seconds": 10.53,
+  "status": "ok",
+  "api_response_id": "gen-1782164643-11EKtU5VbUZ0s44WcxY9"
+}

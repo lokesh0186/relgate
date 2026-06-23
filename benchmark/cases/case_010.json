@@ -1,0 +1,19 @@
+{
+  "case_id": "case_010",
+  "case_type": "k8s_hpa_scaling",
+  "change_summary": "Add Horizontal Pod Autoscaler to catalog-service targeting 65% CPU utilization, min 4 replicas, max 16 replicas. This replaces manual scaling during peak traffic.",
+  "diff_or_config": "--- a/k8s/catalog-service/hpa.yaml\n+++ b/k8s/catalog-service/hpa.yaml\n@@ -0,0 +1,15 @@\n+apiVersion: autoscaling/v2\n+kind: HorizontalPodAutoscaler\n+metadata:\n+  name: catalog-service-hpa\n+  namespace: production\n+spec:\n+  scaleTargetRef:\n+    apiVersion: apps/v1\n+    kind: Deployment\n+    name: catalog-service\n+  minReplicas: 4\n+  maxReplicas: 16\n+  metrics:\n+  - type: Resource\n+    resource:\n+      name: cpu\n+      target:\n+        type: Utilization\n+        averageUtilization: 65",
+  "service_context": "catalog-service serves product catalog API to web and mobile apps. Current steady-state: 6 pods. Peak: manually scaled to 12 pods for sales events. 8k RPM average, 25k RPM peak.",
+  "deployment_plan": "Phased rollout: (1) Apply HPA to staging and run 2-hour load test simulating 3x traffic. (2) Apply HPA to prod cluster with minReplicas=4 matching current baseline during low-traffic window (Tuesday 2am UTC). (3) Monitor for 48 hours before next sale event.",
+  "rollback_plan": "Rollback trigger: if p99 latency exceeds 800ms for 3 consecutive minutes or error rate exceeds 0.5% for 2 minutes, delete the HPA resource via 'kubectl delete hpa catalog-service-hpa -n production' which reverts to static replica count of 6.",
+  "observability_evidence": "Grafana dashboard: grafana.internal/d/catalog-svc-perf (panels: pod count, CPU utilization, p99 latency, error rate, HPA scaling events). CloudWatch Container Insights enabled for EKS cluster. HPA events visible in kubectl describe hpa.",
+  "alerting_evidence": "Existing alerts: catalog_p99_latency > 500ms (warning) and > 800ms (critical) via PagerDuty. New alert added: catalog_hpa_at_max_replicas fires if HPA reaches maxReplicas for >10min. Pod OOMKill alert unchanged.",
+  "owner_oncall_evidence": "Owner: platform-engineering team. On-call: @platform-oncall PagerDuty rotation (primary + secondary). Escalation: platform-lead -> VP Engineering. Change author: Priya Mehta (platform-eng).",
+  "slo_reliability_impact": "catalog-service SLO: 99.9% availability, p99 < 400ms. This change should improve SLO compliance during peak by auto-scaling. Risk: if HPA thrashes (rapid scale up/down), brief latency spikes possible. Error budget consumption: currently 12% used this quarter, acceptable risk.",
+  "blast_radius": "catalog-service only (no downstream dependencies affected by replica count change). Minimum 4 replicas ensures no under-provisioning. Maximum 16 replicas bounded to prevent runaway cost.",
+  "validation_evidence": "Load test in staging: simulated 30k RPM (3x peak) for 2 hours. HPA scaled from 4 to 11 replicas. p99 remained < 350ms. Scale-down took 5min after load drop. No OOMKills. kubectl diff confirms only HPA resource added.",
+  "ground_truth": {
+    "expected_decision": "READY",
+    "seeded_gaps": []
+  }
+}

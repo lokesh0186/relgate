@@ -1,0 +1,38 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:38:01.503609+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table\nDiff / Config: -- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);\nService Context: order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.\nDeployment Plan: Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.\nRollback Plan: [not provided]\nObservability Evidence: pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries\nAlerting Evidence: [not provided]\nOwner / On-Call: order-team, #order-oncall Slack channel, @jsmith primary on-call\nSLO / Reliability Impact: should be fine\nBlast Radius: [not provided]\nValidation Evidence: Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - The bundle includes concrete dashboard/metric evidence (pg_stat_activity monitored during migration and Slow-query dashboard) to detect impact.\nG2: FAIL - The bundle does not include alert coverage for failure modes.\nG3: PASS - The bundle includes a staged rollout (migration during low-traffic window), and a feature flag guards new column usage, controlling the blast radius.\nG4: FAIL - The bundle does not include a specific rollback plan with trigger condition.\nG5: PASS - The bundle identifies the owner (order-team), on-call (#order-oncall Slack channel), and primary on-call (@jsmith).\nG6: FAIL - The bundle does not clearly state SLO, error-budget, or customer-impact risk; \"should be fine\" is not a sufficient assessment.\nG7: PASS - The bundle includes test evidence (migration tested on staging with a 2M row copy of production).\n\nRecommended_actions:\n- Provide a specific rollback plan with trigger condition to address G4.\n- Include alert coverage for potential failure modes to address G2.\n- Clearly state the SLO, error-budget, or customer-impact risk to address G6.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle fails to meet critical production-readiness gates (G2, G4, G6) due to lack of alerting evidence, a specific rollback plan, and a clear reliability impact assessment. Addressing these gaps is necessary before the change can be considered production-ready.",
+  "usage": {
+    "prompt_tokens": 599,
+    "completion_tokens": 306,
+    "total_tokens": 905,
+    "cost": 0.00027345,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00027345,
+      "upstream_inference_prompt_cost": 8.985e-05,
+      "upstream_inference_completions_cost": 0.0001836
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000273,
+  "latency_seconds": 7.52,
+  "status": "ok",
+  "api_response_id": "gen-1782164274-qi0Y8kDHqw8kCGaZ8Jws"
+}

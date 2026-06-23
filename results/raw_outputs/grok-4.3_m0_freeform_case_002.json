@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:39:03.272545+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The proposed TTL reduction from 3600s to 300s will trigger a near-total cache flush across 200k sessions, producing the stated 12x miss-rate spike and p99 latency jump with no phased rollout or warm-up strategy. Simultaneous ConfigMap deployment to every auth-service instance, combined with absent validation, alerting details, and rollback steps, creates an unacceptably wide blast radius affecting all users and downstream services. Several critical production controls (monitoring thresholds, owner coordination, load-impact measurement) are simply not present in the bundle.\n\nRisks_or_missing_information:\n- Simultaneous fleet-wide deployment with no canary or staged rollout, guaranteeing a thundering-herd event on the auth backend and downstream services.\n- No concrete validation evidence, pre/post metrics, or alerting thresholds defined for cache-hit ratio, auth latency, or error rates.\n- Rollback described only as \u201ccan revert config\u201d with no tested procedure, time bounds, or coordination plan.\n- Owner/on-call, SLO impact mitigation, and downstream-service load testing all marked as not provided.\n\nRecommended_actions:\n- Change deployment to a staged rollout (e.g., 5 % \u2192 25 % \u2192 100 %) with explicit Datadog dashboards and alerts for hit-ratio drop >5 % and p99 latency >100 ms before each stage.\n- Supply a tested rollback runbook, owner contact, and 30-minute observation window with automated rollback trigger before any production change.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: High blast radius, missing observability and validation artifacts, and simultaneous rollout make the change unsafe without the actions above.",
+  "usage": {
+    "prompt_tokens": 555,
+    "completion_tokens": 787,
+    "total_tokens": 1342,
+    "cost": 0.00252685,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00252685,
+      "upstream_inference_prompt_cost": 0.00055935,
+      "upstream_inference_completions_cost": 0.0019675
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 461,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002527,
+  "latency_seconds": 7.53,
+  "status": "ok",
+  "api_response_id": "gen-1782164336-3cDH6n4n8AllCyFYTWxP"
+}

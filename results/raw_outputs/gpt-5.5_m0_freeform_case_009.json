@@ -1,0 +1,38 @@
+{
+  "case_id": "case_009",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:51:28.263006+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.\nDiff / Config: --- a/flags/payments.yaml\n+++ b/flags/payments.yaml\n@@ -1,5 +1,5 @@\n new_payment_flow:\n   enabled: true\n-  rollout_percentage: 5\n+  rollout_percentage: 100\n   targeting:\n     - all_users\nService Context: checkout-service processes $2M daily GMV. New payment flow uses Stripe v2 API with different error handling. 5% rollout showed 0.1% higher failure rate than v1.\nDeployment Plan: Update feature flag config to 100%. Immediate effect, no deployment needed.\nRollback Plan: [not provided]\nObservability Evidence: Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.\nAlerting Evidence: Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: All checkout users globally, $2M daily GMV at risk\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: This change is not production-ready for a 100% global rollout. The bundle shows a known regression at 5% rollout, no rollback plan, no owner/on-call, and no validation evidence demonstrating that Stripe v2 is safe at full scale. Given checkout handles $2M daily GMV and the flag takes immediate effect globally, the blast radius is too high without a controlled ramp and explicit operational readiness.\n\nRisks_or_missing_information:\n- The 5% rollout already showed a 0.1% higher failure rate than v1; there is no explanation of root cause, statistical significance, affected payment methods/geographies, or whether the regression was remediated.\n- Rollback plan is missing. Since the flag has immediate effect, operators need an exact revert procedure, expected propagation time, and confirmation that reverting safely returns users to v1 without orphaned/duplicate payment states.\n- Owner/on-call is not provided, so there is no accountable responder for rollout monitoring, incident triage, or Stripe escalation.\n- Validation evidence is missing. There is no proof of successful end-to-end payment authorization/capture, webhook handling, refunds, retries, idempotency, or failure-mode behavior for Stripe v2.\n- Alerting appears insufficient for this risk. A `payment_failure_rate > 2% for 5min` alert may not catch a smaller but financially meaningful regression, especially given the observed 0.1% degradation.\n- Observability evidence is only a dashboard link, not actual rollout data. No current success rate, failure breakdown, latency, webhook error/retry rate, Stripe API error codes, or comparison between v1/v2 is included.\n- No SLO/reliability impact assessment is provided for checkout success rate, payment latency, or revenue impact.\n- Full rollout is global and immediate, creating maximum blast radius with no staged ramp, hold points, or automated abort criteria.\n- Stripe v2 uses different error handling, but there is no evidence that retry behavior, user-facing errors, duplicate charge prevention, and webhook idempotency were reviewed.\n- No mention of Stripe rate limits, quota, regional behavior, or whether 100% traffic volume has been load-tested against the v2 integration.\n\nRecommended_actions:\n- Do not move directly from 5% to 100%. Use a staged rollout such as 10% \u2192 25% \u2192 50% \u2192 100% with defined soak times and explicit go/no-go criteria.\n- Investigate and document the 0.1% higher failure rate from the 5% rollout before expanding. Identify failure categories, affected cohorts, revenue impact, and whether fixes are required.\n- Provide a concrete rollback plan: exact config change, who can execute it, expected time to take effect, verification steps, and any cleanup needed for in-flight payments.\n- Assign and document an accountable owner and on-call coverage for the rollout window, including escalation paths to payments engineering and Stripe support.\n- Add rollout-specific monitoring with tighter temporary alerts for v2 payment success rate, authorization/capture failures, Stripe API errors by code, webhook delivery/retry failures, checkout latency, and revenue/GMV drop.\n- Provide validation evidence from the 5% cohort and/or staging/load tests covering successful payments, declined cards, retries, webhook processing, refunds, duplicate prevention/idempotency, and fallback behavior.\n- Define SLO and business-impact thresholds for aborting the rollout, including acceptable delta versus v1 and maximum tolerable failed-payment increase.\n- Confirm that reverting the feature flag does not break users already in the Stripe v2 flow or cause double charges, lost webhooks, or inconsistent payment state.\n- Schedule the rollout during a staffed low-risk window and require active monitoring for at least the first hour after each ramp step.\n\nFinal Decision: FIX-BEFORE-SHIP\n\nDecision Rationale: A full global rollout of a payment-path change with known elevated failure rate, missing rollback plan, missing ownership, and no validation evidence presents unacceptable revenue and customer-impact risk. The change should not proceed until the regression is understood, operational controls are in place, and the rollout is staged with clear abort criteria.",
+  "usage": {
+    "prompt_tokens": 466,
+    "completion_tokens": 1082,
+    "total_tokens": 1548,
+    "cost": 0.03479,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.03479,
+      "upstream_inference_prompt_cost": 0.00233,
+      "upstream_inference_completions_cost": 0.03246
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 238,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.03479,
+  "latency_seconds": 20.0,
+  "status": "ok",
+  "api_response_id": "gen-1782165068-eTDiRJSUVm1bBQcOVaUW"
+}

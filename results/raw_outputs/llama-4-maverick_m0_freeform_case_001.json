@@ -1,0 +1,38 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:37:34.870487+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table\nDiff / Config: -- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);\nService Context: order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.\nDeployment Plan: Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.\nRollback Plan: [not provided]\nObservability Evidence: pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries\nAlerting Evidence: [not provided]\nOwner / On-Call: order-team, #order-oncall Slack channel, @jsmith primary on-call\nSLO / Reliability Impact: should be fine\nBlast Radius: [not provided]\nValidation Evidence: Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle appears to be mostly well-structured, but there are some gaps in information and potential risks that need to be addressed before deploying to production. The addition of a NOT NULL column with a DEFAULT value to a large table is a reasonable approach to avoid locking issues. However, some critical details are missing, and the provided information raises concerns about the thoroughness of testing and monitoring.\n\nRisks_or_missing_information:\n- The rollback plan is not provided, which is a significant gap in case something goes wrong during or after the migration.\n- There is no evidence of alerting being set up or modified, which could lead to unnoticed issues post-migration.\n- The \"should be fine\" statement regarding SLO/Reliability Impact is too vague and doesn't provide a clear understanding of the potential impact.\n- The blast radius is not specified, making it difficult to assess the potential scope of any issues that may arise.\n- While the migration was tested on a staging environment, it's not clear if the staging environment accurately represents the production load and schema.\n\nRecommended_actions:\n- Provide a detailed rollback plan in case the migration or subsequent application deployment fails or causes issues.\n- Clarify the impact on SLOs and reliability, providing specific metrics or thresholds that will be affected.\n- Specify the blast radius, including which components or users might be affected by the change.\n- Enhance the validation evidence by testing the migration under a more realistic load or with a more representative dataset.\n- Ensure that alerting is appropriately configured to detect potential issues related to the new column and index.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary to confidently deploy the change to production. Addressing the identified gaps and risks is essential to ensure a smooth and reliable deployment.",
+  "usage": {
+    "prompt_tokens": 450,
+    "completion_tokens": 360,
+    "total_tokens": 810,
+    "cost": 0.0002835,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0002835,
+      "upstream_inference_prompt_cost": 6.75e-05,
+      "upstream_inference_completions_cost": 0.000216
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000284,
+  "latency_seconds": 10.35,
+  "status": "ok",
+  "api_response_id": "gen-1782164245-u1H73S97M7mRGUW7BlVd"
+}

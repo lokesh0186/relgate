@@ -1,0 +1,23 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "change_summary": "Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.",
+  "diff_or_config": "--- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code",
+  "service_context": "search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.",
+  "deployment_plan": "Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.",
+  "rollback_plan": "",
+  "observability_evidence": "Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.",
+  "alerting_evidence": "",
+  "owner_oncall_evidence": "observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary",
+  "slo_reliability_impact": "",
+  "blast_radius": "search-service only, 12 pods across 2 AZs",
+  "validation_evidence": "Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G4", "description": "No rollback plan for sampling rate change", "severity": "critical"},
+      {"gate": "G2", "description": "No alerting for log pipeline saturation or storage exhaustion", "severity": "critical"},
+      {"gate": "G6", "description": "No SLO/reliability impact assessment for 10x log volume increase", "severity": "major"}
+    ]
+  }
+}

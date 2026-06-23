@@ -1,0 +1,38 @@
+{
+  "case_id": "case_005",
+  "case_type": "routing_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:44:22.237830+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Shift /api/v2/* traffic from legacy-api backend to new api-v2-service via nginx ingress annotation update\nDiff / Config: # k8s/ingress/api-gateway.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: api-gateway\n  annotations:\n    nginx.ingress.kubernetes.io/canary: \"true\"\n    nginx.ingress.kubernetes.io/canary-weight: \"10\"\nspec:\n  rules:\n  - host: api.company.com\n    http:\n      paths:\n      - path: /api/v2\n-       backend:\n-         service: legacy-api\n-         port: 8080\n+       backend:\n+         service: api-v2-service\n+         port: 8080\nService Context: api-gateway (nginx ingress controller), serves 10k RPM. /api/v2 handles ~3.2k RPM from mobile clients and 2 internal services.\nDeployment Plan: Canary rollout: 10% traffic for 30min, then 50% for 1h, then 100% if error rate stays below 0.1%.\nRollback Plan: [not provided]\nObservability Evidence: [not provided]\nAlerting Evidence: [not provided]\nOwner / On-Call: platform-team owns ingress. On-call: @platform-oncall in #platform-incidents\nSLO / Reliability Impact: [not provided]\nBlast Radius: All /api/v2 consumers: mobile app (iOS/Android), order-service, notification-service.\nValidation Evidence: api-v2-service passes full integration test suite. Load tested at 5k RPM with p99 < 80ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle updates the nginx ingress to shift /api/v2/* traffic from legacy-api to api-v2-service, but lacks critical information for a production-ready assessment, including rollback plans, observability, and alerting evidence. The canary rollout plan is outlined, but its success relies on unprovided monitoring and alerting. The change impacts multiple consumers and a significant portion of the api-gateway's traffic.\n\nRisks_or_missing_information:\n- No rollback plan is provided in case the canary rollout fails or encounters issues.\n- Observability evidence is missing to understand the current state of the system and to monitor the canary rollout effectively.\n- Alerting evidence is not provided to ensure that the on-call team will be notified in case of issues during the rollout.\n- SLO/Reliability Impact is not assessed, making it unclear how this change affects the overall reliability and service level objectives.\n- Although the change is load tested, the test conditions (5k RPM) exceed the current /api/v2 traffic (~3.2k RPM from mobile clients and 2 internal services), but it's not clear if the test fully represents production conditions.\n\nRecommended_actions:\n- Provide a detailed rollback plan to ensure quick recovery in case of issues during the canary rollout.\n- Include observability evidence (e.g., dashboards, logging) to monitor the canary rollout and assess the health of api-v2-service.\n- Ensure alerting is in place for the on-call team to be notified of any issues during the rollout, based on error rates and other relevant metrics.\n- Assess and document the SLO/Reliability Impact of this change to understand its effect on the service's overall reliability.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary for a safe and monitored rollout, including a rollback plan, observability, and alerting evidence. Without these, the risk of unnoticed or unhandled issues during the canary rollout is too high.",
+  "usage": {
+    "prompt_tokens": 553,
+    "completion_tokens": 403,
+    "total_tokens": 956,
+    "cost": 0.00032475,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00032475,
+      "upstream_inference_prompt_cost": 8.295e-05,
+      "upstream_inference_completions_cost": 0.0002418
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000325,
+  "latency_seconds": 8.9,
+  "status": "ok",
+  "api_response_id": "gen-1782164653-IxPL3kjutY04rsOhllAd"
+}

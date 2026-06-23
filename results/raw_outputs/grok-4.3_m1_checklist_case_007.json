@@ -1,0 +1,38 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:48:28.233114+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.\nDiff / Config: --- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code\nService Context: search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.\nDeployment Plan: Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.\nRollback Plan: [not provided]\nObservability Evidence: Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.\nAlerting Evidence: [not provided]\nOwner / On-Call: observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary\nSLO / Reliability Impact: [not provided]\nBlast Radius: search-service only, 12 pods across 2 AZs\nValidation Evidence: Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS | FAIL - grafana log-volume dashboard + CloudWatch Fluentd metrics provided\nG2: PASS | FAIL - no alert coverage or failure-mode thresholds supplied\nG3: PASS | FAIL - staged feature-flag rollout (5 %\u219225 %\u2192100 % over 3 days) + blast-radius stated\nG4: PASS | FAIL - rollback plan explicitly marked \u201cnot provided\u201d\nG5: PASS | FAIL - owner, Slack, and PagerDuty rotation identified\nG6: PASS | FAIL - no SLO, error-budget, or customer-impact statement supplied\nG7: PASS | FAIL - 24 h staging run with verification evidence included\n\nRecommended_actions:\n- Add concrete rollback plan (e.g., revert sampling_rate to 0.01 on log-volume > X or Fluentd back-pressure alert)\n- Define and attach at least one alert (log-volume growth, ES ingestion lag, or Fluentd queue depth) with owner\n- State expected storage/cost delta and any SLO risk or error-budget consumption\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, alerting, and reliability-impact statements violate mandatory gates for a change that multiplies log volume 10\u00d7.",
+  "usage": {
+    "prompt_tokens": 750,
+    "completion_tokens": 759,
+    "total_tokens": 1509,
+    "cost": 0.0027006,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0027006,
+      "upstream_inference_prompt_cost": 0.0008031,
+      "upstream_inference_completions_cost": 0.0018975
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 511,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002701,
+  "latency_seconds": 4.63,
+  "status": "ok",
+  "api_response_id": "gen-1782164903-g64e1jQKwOorfFWgCNQP"
+}

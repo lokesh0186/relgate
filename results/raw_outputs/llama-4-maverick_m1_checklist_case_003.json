@@ -1,0 +1,38 @@
+{
+  "case_id": "case_003",
+  "case_type": "kubernetes_resource_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:41:35.535354+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase memory limit from 512Mi to 2Gi for order-service pods to resolve recurring OOMKill events\nDiff / Config: # k8s/order-service/deployment.yaml\nspec:\n  containers:\n  - name: order-service\n    resources:\n      requests:\n-       memory: 256Mi\n+       memory: 1Gi\n      limits:\n-       memory: 512Mi\n+       memory: 2Gi\n        cpu: 500m\nService Context: order-service (Go), 12 pods across 3 AZs, EKS cluster prod-us-east-1. Current node pool: m5.2xlarge (32Gi each).\nDeployment Plan: Rolling update with maxSurge=1 maxUnavailable=0. Pods replaced one at a time over ~15 minutes.\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/order-svc-resources showing memory usage trends and OOMKill count.\nAlerting Evidence: PagerDuty alert 'order-service-oomkill' fires when OOMKill count > 2 in 5m window. Alert has fired 14 times this week.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: order-service only. Node memory utilization will increase from 68% to ~74% per node.\nValidation Evidence: Load test in staging with 2Gi limit showed 0 OOMKills under 2x production traffic for 4 hours.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - The bundle includes a Grafana dashboard (grafana.internal/d/order-svc-resources) showing memory usage trends and OOMKill count, providing concrete evidence to detect impact.\nG2: PASS - The bundle includes alert coverage for failure modes, specifically the 'order-service-oomkill' PagerDuty alert that fires when OOMKill count > 2 in 5m window.\nG3: PASS - The bundle includes a staged rollout plan with a rolling update (maxSurge=1, maxUnavailable=0), controlling the blast radius by replacing pods one at a time over ~15 minutes.\nG4: FAIL - The bundle does not include a specific rollback plan with a trigger condition.\nG5: FAIL - The bundle does not identify the owner, on-call, and escalation path.\nG6: FAIL - The bundle does not state the SLO, error-budget, or customer-impact risk, although it does mention the blast radius in terms of node memory utilization.\nG7: PASS - The bundle includes validation evidence from a load test in staging with a 2Gi limit, showing 0 OOMKills under 2x production traffic for 4 hours.\n\nRecommended_actions:\n- Provide a specific rollback plan with a trigger condition to address G4.\n- Identify the owner, on-call, and escalation path to address G5.\n- State the SLO, error-budget, or customer-impact risk to address G6.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Although the change bundle provides evidence for observability, alerting, rollout safety, and validation, it lacks critical information regarding rollback, ownership, and reliability impact. These gaps need to be addressed before the change can be considered production-ready.",
+  "usage": {
+    "prompt_tokens": 669,
+    "completion_tokens": 359,
+    "total_tokens": 1028,
+    "cost": 0.00031575,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00031575,
+      "upstream_inference_prompt_cost": 0.00010035,
+      "upstream_inference_completions_cost": 0.0002154
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000316,
+  "latency_seconds": 7.92,
+  "status": "ok",
+  "api_response_id": "gen-1782164487-vMsruat7JJ3ceIHB8LKN"
+}

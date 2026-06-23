@@ -1,0 +1,38 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:37:24.472206+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table\nDiff / Config: -- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);\nService Context: order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.\nDeployment Plan: Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.\nRollback Plan: [not provided]\nObservability Evidence: pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries\nAlerting Evidence: [not provided]\nOwner / On-Call: order-team, #order-oncall Slack channel, @jsmith primary on-call\nSLO / Reliability Impact: should be fine\nBlast Radius: [not provided]\nValidation Evidence: Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change adds a NOT NULL column with a constant default and a concurrent index on an 18M-row table. The migration itself is low-risk in Postgres 14, but the bundle is missing rollback steps, alerting configuration, blast radius, and any description of how the new column value will be populated or validated post-deploy. Validation was performed only on a 9x smaller staging copy, and no evidence is shown that the default of 0 is safe or that the index build completed without bloat or vacuum issues on production-scale data.\n\nRisks_or_missing_information:\n- Rollback plan, alerting evidence, and blast radius are all explicitly marked \"[not provided]\"\n- Index CONCURRENTLY on 18 M rows can still generate WAL bloat, hold AccessExclusiveLock briefly at start/end, and run for minutes; no timeout, monitoring threshold, or abort criteria are defined\n- Validation performed on a 2 M-row subset; no evidence that the same migration duration, lock behavior, or index size scales to the real table or that the chosen default (0) is semantically valid for existing orders\n\nRecommended_actions:\n- Supply a concrete rollback script (e.g., DROP COLUMN or set default + backfill plan) and test it on a restored snapshot before merge\n- Add a production-sized dry-run (or blue/green table copy) plus explicit alerting on lock waits, index bloat, and replication lag; define a stop-time or row-count threshold for the concurrent index build\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, alerting, and blast-radius artifacts plus undersized validation constitute unacceptable production risk for a table that receives 50 k writes/day.",
+  "usage": {
+    "prompt_tokens": 562,
+    "completion_tokens": 803,
+    "total_tokens": 1365,
+    "cost": 0.0021724,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 512,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0021724,
+      "upstream_inference_prompt_cost": 0.0001649,
+      "upstream_inference_completions_cost": 0.0020075
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 463,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002172,
+  "latency_seconds": 7.56,
+  "status": "ok",
+  "api_response_id": "gen-1782164237-wrgYzBmAUXFqS6yFj6xQ"
+}

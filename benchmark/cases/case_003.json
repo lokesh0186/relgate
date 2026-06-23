@@ -1,0 +1,23 @@
+{
+  "case_id": "case_003",
+  "case_type": "kubernetes_resource_change",
+  "change_summary": "Increase memory limit from 512Mi to 2Gi for order-service pods to resolve recurring OOMKill events",
+  "diff_or_config": "# k8s/order-service/deployment.yaml\nspec:\n  containers:\n  - name: order-service\n    resources:\n      requests:\n-       memory: 256Mi\n+       memory: 1Gi\n      limits:\n-       memory: 512Mi\n+       memory: 2Gi\n        cpu: 500m",
+  "service_context": "order-service (Go), 12 pods across 3 AZs, EKS cluster prod-us-east-1. Current node pool: m5.2xlarge (32Gi each).",
+  "deployment_plan": "Rolling update with maxSurge=1 maxUnavailable=0. Pods replaced one at a time over ~15 minutes.",
+  "rollback_plan": "",
+  "observability_evidence": "Grafana dashboard: grafana.internal/d/order-svc-resources showing memory usage trends and OOMKill count.",
+  "alerting_evidence": "PagerDuty alert 'order-service-oomkill' fires when OOMKill count > 2 in 5m window. Alert has fired 14 times this week.",
+  "owner_oncall_evidence": "",
+  "slo_reliability_impact": "",
+  "blast_radius": "order-service only. Node memory utilization will increase from 68% to ~74% per node.",
+  "validation_evidence": "Load test in staging with 2Gi limit showed 0 OOMKills under 2x production traffic for 4 hours.",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G4", "description": "No rollback plan if increased memory causes node resource pressure or scheduling failures", "severity": "critical"},
+      {"gate": "G6", "description": "No SLO or reliability impact assessment provided", "severity": "major"},
+      {"gate": "G5", "description": "No owner or on-call team identified for the change", "severity": "major"}
+    ]
+  }
+}

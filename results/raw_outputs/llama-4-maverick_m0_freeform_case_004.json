@@ -1,0 +1,38 @@
+{
+  "case_id": "case_004",
+  "case_type": "infrastructure_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:42:44.541051+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Upgrade RDS instance class from db.r5.large to db.r5.2xlarge for payments-db to address CPU saturation during peak\nDiff / Config: # terraform/modules/rds/payments.tf\nresource \"aws_db_instance\" \"payments_db\" {\n-  instance_class    = \"db.r5.large\"\n+  instance_class    = \"db.r5.2xlarge\"\n   engine            = \"postgres\"\n   engine_version    = \"14.8\"\n   multi_az          = true\n   storage_encrypted = true\n   allocated_storage = 500\n}\nService Context: payments-db (PostgreSQL 14.8, Multi-AZ), serves payment-service. Processes ~$2.1M transactions/day. Current CPU peaks at 89%.\nDeployment Plan: terraform apply\nRollback Plan: can downgrade\nObservability Evidence: CloudWatch RDS dashboard: console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=payments-rds\nAlerting Evidence: [not provided]\nOwner / On-Call: DBA team owns payments-db. On-call channel: #dba-oncall. Primary: @dba-lead\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle proposes upgrading the RDS instance class for payments-db from db.r5.large to db.r5.2xlarge to alleviate CPU saturation. While the change is straightforward, there are several gaps in the provided information that need to be addressed before considering it production-ready. Key concerns include the lack of evidence on alerting, SLO/reliability impact, blast radius, and validation. The DBA team is identified as the owner and on-call contact.\n\nRisks_or_missing_information:\n- Lack of alerting evidence to understand current alerting thresholds and how they might be affected by the change.\n- No information on SLO/reliability impact, making it unclear how this change affects service reliability and user experience.\n- Blast radius is not provided, which is crucial for understanding the potential impact of the change on other services or systems.\n- Validation evidence is missing, so it's unclear if the change has been tested or validated in a non-production environment.\n- The rollback plan is mentioned but lacks detail on the process and potential risks or downtime associated with rolling back.\n\nRecommended_actions:\n- Provide alerting evidence to ensure that monitoring and alerting are appropriately configured for the new instance class.\n- Include an assessment of the SLO/reliability impact to understand the change's effect on service reliability.\n- Evaluate and document the blast radius to ensure that all potentially affected components are identified and monitored.\n- Conduct thorough validation of the change in a non-production environment and provide evidence of this validation.\n- Detail the rollback plan, including steps, potential risks, and estimated downtime, to ensure a smooth recovery if needed.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary to assess its production readiness fully. Addressing the identified gaps and risks is essential before deploying the change to production.",
+  "usage": {
+    "prompt_tokens": 476,
+    "completion_tokens": 365,
+    "total_tokens": 841,
+    "cost": 0.0002904,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0002904,
+      "upstream_inference_prompt_cost": 7.14e-05,
+      "upstream_inference_completions_cost": 0.000219
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.00029,
+  "latency_seconds": 8.42,
+  "status": "ok",
+  "api_response_id": "gen-1782164556-QTYul9RkFspuoUCru40b"
+}

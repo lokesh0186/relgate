@@ -1,0 +1,25 @@
+{
+  "case_id": "case_009",
+  "case_type": "feature_flag_rollout",
+  "change_summary": "Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.",
+  "diff_or_config": "--- a/flags/payments.yaml\n+++ b/flags/payments.yaml\n@@ -1,5 +1,5 @@\n new_payment_flow:\n   enabled: true\n-  rollout_percentage: 5\n+  rollout_percentage: 100\n   targeting:\n     - all_users",
+  "service_context": "checkout-service processes $2M daily GMV. New payment flow uses Stripe v2 API with different error handling. 5% rollout showed 0.1% higher failure rate than v1.",
+  "deployment_plan": "Update feature flag config to 100%. Immediate effect, no deployment needed.",
+  "rollback_plan": "",
+  "observability_evidence": "Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.",
+  "alerting_evidence": "Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.",
+  "owner_oncall_evidence": "",
+  "slo_reliability_impact": "",
+  "blast_radius": "All checkout users globally, $2M daily GMV at risk",
+  "validation_evidence": "",
+  "ground_truth": {
+    "expected_decision": "FIX-BEFORE-SHIP",
+    "seeded_gaps": [
+      {"gate": "G3", "description": "Jumping from 5% to 100% with no intermediate stages", "severity": "critical"},
+      {"gate": "G4", "description": "No rollback plan - how to revert flag quickly if issues at 100%", "severity": "critical"},
+      {"gate": "G5", "description": "No owner or on-call for the rollout", "severity": "major"},
+      {"gate": "G6", "description": "No SLO impact assessment despite known 0.1% higher failure rate", "severity": "major"},
+      {"gate": "G7", "description": "No validation at intermediate percentages (e.g., 25%, 50%)", "severity": "major"}
+    ]
+  }
+}

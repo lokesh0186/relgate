@@ -1,0 +1,38 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:49:45.972805+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.\nDiff / Config: --- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10\nService Context: notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.\nDeployment Plan: Update config and restart workers.\nRollback Plan: Set concurrency back to 5 if issues arise.\nObservability Evidence: CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: This is a simple config change, but increasing concurrency 4x on a worker that calls external notification providers has meaningful production risk. The bundle does not provide enough evidence that downstream providers, the worker hosts, retry behavior, alerting, or rollback procedures can safely handle the increased throughput. I would not ship this directly to production without validation and operational guardrails.\n\nRisks_or_missing_information:\n- No evidence that email, push, or SMS providers can tolerate a 4x increase in parallel sends without throttling, rate limiting, quota exhaustion, or increased failures.\n- No alerting evidence provided for SQS backlog age, visible messages, DLQ depth, worker error rate, retry rate, provider 429/5xx responses, or notification delivery failures.\n- No owner or on-call identified; unclear who will monitor deployment and respond if the change causes provider throttling or message failures.\n- No validation evidence from staging, load testing, or a production canary showing concurrency 20 is safe.\n- No explanation of why backlog exists. At 50k messages/day and 200ms/message, current capacity appears much higher than average load, so the bottleneck may be burstiness, downstream latency, rate limits, worker crashes, or another issue not addressed by concurrency alone.\n- Batch size is 10, so increasing concurrency from 5 to 20 may significantly increase in-flight messages and downstream fan-out, not just worker count.\n- Rollback plan is incomplete. Setting concurrency back to 5 may not immediately recover from provider throttling, accumulated retries, DLQ growth, duplicate sends, or exhausted quotas.\n- No blast radius documented. Notification-service may affect customer-facing email, SMS, and push delivery, with possible duplicate or delayed notifications.\n- No confirmation that message processing is idempotent and safe under increased concurrency/retries.\n- No evidence that worker CPU, memory, network, connection pools, credentials, or SDK/client limits can support 20 concurrent workers.\n- Visibility timeout remains 300 seconds, but no p95/p99 processing-time evidence is provided under higher concurrency or downstream degradation.\n- No deployment safety plan beyond \u201crestart workers\u201d; unclear whether this is all instances at once, a rolling restart, or a canary.\n\nRecommended_actions:\n- Validate provider limits and quotas for email, SMS, and push, and set explicit per-provider rate limits if needed before raising worker concurrency.\n- Perform a staged rollout: increase from 5 to 10 first, monitor, then proceed to 20 only if metrics remain healthy.\n- Add or confirm alerts for SQS ApproximateAgeOfOldestMessage, visible message count, DLQ depth, worker error rate, retry count, processing latency, provider throttling/429s, provider 5xxs, and notification send success rate.\n- Identify the service owner and on-call responsible for the deployment window, monitoring, and rollback.\n- Provide validation evidence from staging/load test or a controlled production canary showing concurrency 20 does not increase errors, latency, duplicate sends, or provider throttling.\n- Document the current backlog characteristics and suspected root cause; confirm that increased concurrency is the right mitigation.\n- Confirm worker resource capacity at concurrency 20, including CPU, memory, network, connection pools, and any shared dependencies.\n- Confirm idempotency and duplicate-send protections for retried SQS messages.\n- Improve rollback plan to include immediate config rollback, worker restart procedure, provider throttling mitigation, DLQ inspection/redrive criteria, and post-rollback monitoring checks.\n- Deploy using a rolling or canary approach rather than restarting all workers simultaneously.\n\nFinal Decision: FIX-BEFORE-SHIP\n\nDecision Rationale: The change may be reasonable, but the bundle lacks critical operational evidence and safeguards for a 4x concurrency increase against external notification providers. Ship only after downstream capacity, alerting, ownership, validation, and a safer rollout/rollback plan are in place.",
+  "usage": {
+    "prompt_tokens": 420,
+    "completion_tokens": 1101,
+    "total_tokens": 1521,
+    "cost": 0.03513,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.03513,
+      "upstream_inference_prompt_cost": 0.0021,
+      "upstream_inference_completions_cost": 0.03303
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 304,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.03513,
+  "latency_seconds": 27.86,
+  "status": "ok",
+  "api_response_id": "gen-1782164958-dO7zBfKrdodeweexCWnt"
+}

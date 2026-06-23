@@ -1,0 +1,38 @@
+{
+  "case_id": "case_009",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m2_evidence_grounded",
+  "timestamp": "2026-06-22T21:52:53.355607+00:00",
+  "system_prompt": "You are RelGate, a production-readiness gate that enforces evidence-grounded review. For every PASS verdict, you must cite exact supporting text copied from the change bundle. If exact supporting evidence is absent, mark MISSING_EVIDENCE. Do not infer, assume, or fabricate readiness evidence.",
+  "user_prompt": "Evaluate this change against the evidence-grounded production-readiness gates below.\n\n== EVIDENCE-GROUNDING RULES ==\n1. Every PASS verdict must include an exact quote copied from the change bundle.\n2. If exact evidence is not present in the bundle, mark that gate as MISSING_EVIDENCE.\n3. Do not infer evidence from general knowledge or from the fact that a tool/service usually exists.\n4. Do not treat vague statements such as \"should be fine\", \"can revert\", \"we have monitoring\", or \"deploy to prod\" as sufficient evidence for a PASS.\n5. Final Decision cannot be READY if any critical gate G1-G4 is MISSING_EVIDENCE.\n6. READY is allowed only when all critical gates have explicit evidence and no major gate has a severe unresolved concern.\n== END RULES ==\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability [CRITICAL]: concrete dashboard, metric, log, or trace evidence to detect impact.\nG2 Alerting [CRITICAL]: alert coverage for relevant failure modes.\nG3 Rollout Safety [CRITICAL]: staged rollout, canary, feature flag, or blast-radius control.\nG4 Rollback [CRITICAL]: specific rollback procedure and trigger condition.\nG5 Ownership [MAJOR]: owner, on-call, and escalation path.\nG6 Reliability Impact [MAJOR]: SLO, error-budget, or customer-impact analysis.\nG7 Validation [MAJOR]: test, dry-run, staging, backtest, load test, or verification evidence.\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.\nDiff / Config: --- a/flags/payments.yaml\n+++ b/flags/payments.yaml\n@@ -1,5 +1,5 @@\n new_payment_flow:\n   enabled: true\n-  rollout_percentage: 5\n+  rollout_percentage: 100\n   targeting:\n     - all_users\nService Context: checkout-service processes $2M daily GMV. New payment flow uses Stripe v2 API with different error handling. 5% rollout showed 0.1% higher failure rate than v1.\nDeployment Plan: Update feature flag config to 100%. Immediate effect, no deployment needed.\nRollback Plan: [not provided]\nObservability Evidence: Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.\nAlerting Evidence: Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: All checkout users globally, $2M daily GMV at risk\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG2: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG3: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG4: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG5: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG6: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\nG7: PASS | MISSING_EVIDENCE - Evidence: \"<exact quote>\" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale citing missing critical gates or complete evidence>",
+  "response": "Gate Results:\nG1: PASS - Evidence: \"Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.\"\nG2: PASS - Evidence: \"Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.\"\nG3: PASS - Evidence: \"Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.\"\nG4: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide a specific rollback procedure, such as setting `rollout_percentage` back to 5 or 0, plus explicit trigger conditions such as payment failure rate, latency, or Stripe error thresholds.\nG5: MISSING_EVIDENCE - Evidence: No evidence found in bundle. Recommendation: Provide the accountable service owner, current on-call rotation, and escalation path for checkout-service/payment incidents.\nG6: PASS - Evidence: \"5% rollout showed 0.1% higher failure rate than v1.\"\nG7: PASS - Evidence: \"Previously tested at 5% for 1 week.\"\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Critical gate G4 Rollback is MISSING_EVIDENCE. Final Decision cannot be READY when any critical gate G1-G4 is missing explicit evidence.",
+  "usage": {
+    "prompt_tokens": 944,
+    "completion_tokens": 1331,
+    "total_tokens": 2275,
+    "cost": 0.04465,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.04465,
+      "upstream_inference_prompt_cost": 0.00472,
+      "upstream_inference_completions_cost": 0.03993
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 1034,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.04465,
+  "latency_seconds": 22.2,
+  "status": "ok",
+  "api_response_id": "gen-1782165151-KWdI4EynsV5wigGSvyjV"
+}

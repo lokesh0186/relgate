@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: "RelGate: Evidence-Grounded Reliability Gates for LLM-Assisted Cloud Change Review"
+message: "If you use this work, please cite it as below."
+type: software
+authors:
+  - family-names: Chauhan
+    given-names: Lokesh
+    orcid: "https://orcid.org/0009-0001-1065-0103"
+    affiliation: "Independent Researcher"
+repository-code: "https://github.com/lokesh0186/relgate"
+url: "https://github.com/lokesh0186/relgate"
+date-released: "2026-06-22"
+keywords:
+  - production-readiness
+  - LLM
+  - reliability
+  - evidence-grounding
+  - cloud-changes
+  - software-reliability-engineering
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "RelGate: Evidence-Grounded Reliability Gates for LLM-Assisted Cloud Change Review"
+  authors:
+    - family-names: Chauhan
+      given-names: Lokesh
+  conference:
+    name: "IEEE International Symposium on Software Reliability Engineering (ISSRE)"
+  year: 2026
+  notes: "Submitted to ISSRE 2026 Fast Abstracts / Project Highlights track."

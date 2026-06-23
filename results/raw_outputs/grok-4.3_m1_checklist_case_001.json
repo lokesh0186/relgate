@@ -1,0 +1,38 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:37:53.959167+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table\nDiff / Config: -- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);\nService Context: order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.\nDeployment Plan: Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.\nRollback Plan: [not provided]\nObservability Evidence: pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries\nAlerting Evidence: [not provided]\nOwner / On-Call: order-team, #order-oncall Slack channel, @jsmith primary on-call\nSLO / Reliability Impact: should be fine\nBlast Radius: [not provided]\nValidation Evidence: Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - pg_stat_activity + Grafana slow-query dashboard referenced\nG2: FAIL - no alert coverage or failure-mode rules provided\nG3: PASS - feature flag + low-traffic window (3-5am) limits blast radius\nG4: FAIL - rollback plan explicitly marked [not provided]\nG5: PASS - owner (order-team), on-call (#order-oncall), primary (@jsmith) identified\nG6: FAIL - only states \"should be fine\"; no SLO, error budget, or quantified risk\nG7: PASS - staging migration test on 2M-row copy completed successfully\n\nRecommended_actions:\n- Add concrete rollback DDL (e.g., DROP COLUMN) plus trigger condition (e.g., >30s lock or replication lag >5s)\n- Define at least one alert (migration duration, lock wait, or replication lag) and link it to the on-call rotation\n- Replace \"should be fine\" with explicit statement of affected SLO/error budget\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, alerting, and quantified reliability impact block production release.",
+  "usage": {
+    "prompt_tokens": 711,
+    "completion_tokens": 597,
+    "total_tokens": 1308,
+    "cost": 0.00164205,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 704,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00164205,
+      "upstream_inference_prompt_cost": 0.00014955,
+      "upstream_inference_completions_cost": 0.0014925
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 365,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.001642,
+  "latency_seconds": 5.2,
+  "status": "ok",
+  "api_response_id": "gen-1782164269-UELDOLaYoCU7hsVOLoB9"
+}

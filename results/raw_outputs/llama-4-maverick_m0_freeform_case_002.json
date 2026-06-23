@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:39:13.585045+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change reduces Redis TTL for user-session cache from 3600s to 300s, which may cause a significant increase in cache miss rate and auth latency. While the change aims to address a stale session data bug, it introduces potential performance risks. The change bundle lacks critical information on alerting, validation, and ownership. \n\nRisks_or_missing_information:\n- Lack of alerting evidence to ensure monitoring is in place for potential issues\n- No validation evidence to confirm the change fixes JIRA-4821 or that it doesn't introduce new issues\n- Missing owner/on-call information, making it unclear who is responsible for the change and its potential consequences\n- Potential performance impact on auth-service and downstream services due to increased cache miss rate\n- No clear indication of how the cache warm-up period will be monitored or managed\n\nRecommended_actions:\n- Provide alerting evidence to confirm that monitoring is in place for cache miss rate, auth latency, and other relevant metrics\n- Include validation evidence, such as test results or canary deployment outcomes, to demonstrate the change's effectiveness and safety\n- Add owner/on-call information to ensure clear responsibility and escalation paths\n- Consider a gradual rollout or canary deployment to mitigate the blast radius and allow for more controlled monitoring of the change's impact\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information, and the potential performance risks need to be better understood and mitigated before deploying to production.",
+  "usage": {
+    "prompt_tokens": 444,
+    "completion_tokens": 300,
+    "total_tokens": 744,
+    "cost": 0.0002466,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0002466,
+      "upstream_inference_prompt_cost": 6.66e-05,
+      "upstream_inference_completions_cost": 0.00018
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000247,
+  "latency_seconds": 10.29,
+  "status": "ok",
+  "api_response_id": "gen-1782164344-1WaR0EZ6f3QZy5TUf33u"
+}

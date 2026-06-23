@@ -1,0 +1,38 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:47:50.000345+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.\nDiff / Config: --- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code\nService Context: search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.\nDeployment Plan: Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.\nRollback Plan: [not provided]\nObservability Evidence: Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.\nAlerting Evidence: [not provided]\nOwner / On-Call: observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary\nSLO / Reliability Impact: [not provided]\nBlast Radius: search-service only, 12 pods across 2 AZs\nValidation Evidence: Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: This change is directionally reasonable for improving latency-spike debugging, but it is not production-ready as submitted. Moving from 1% to 10% sampling likely increases log volume from ~2TB/day to ~20TB/day at full rollout, and the bundle does not show production capacity, alerting, cost, retention, or rollback readiness. Staging validation is useful but not sufficient evidence for the production Elasticsearch/Fluentd path at this scale.\n\nRisks_or_missing_information:\n- Expected production log volume is not explicitly modeled. Based on current data, full rollout may add ~18TB/day of log ingestion/storage, with associated Elasticsearch disk, shard, indexing, retention, and cost impact.\n- Rollback plan is missing. There is no documented procedure, owner action, expected propagation time, or validation that reverting the sampling rate/feature flag works.\n- Alerting evidence is missing. No proof of alerts for Fluentd backpressure, buffer growth, dropped logs, Elasticsearch ingest failures/rejections, disk watermarks, indexing latency, or search-service logging overhead.\n- SLO/reliability impact is not provided. Increased logging can affect application CPU, I/O, network egress, Fluentd resource usage, and downstream ES availability.\n- Staging validation may not be representative of production traffic volume, cardinality, payload size, or burst behavior. \u201cNo backpressure in staging\u201d does not prove production safety.\n- Rollout plan lacks explicit gates and abort thresholds. \u201c5% -> 25% -> 100% over 3 days\u201d should define what metrics must remain healthy before advancing.\n- Elasticsearch capacity and retention policy are not described. It is unclear whether the cluster can absorb ~10x volume without hitting disk watermarks, shard pressure, ingestion throttling, or retention/cost limits.\n- Blast radius says \u201csearch-service only,\u201d but the logging pipeline and Elasticsearch are shared dependencies unless proven otherwise. This could affect other services\u2019 log ingestion/search if capacity is exhausted.\n- Increased sampling of logs containing `user_id` increases privacy/compliance exposure and storage of user-identifiable data; no review or retention adjustment is mentioned.\n\nRecommended_actions:\n- Provide a production log-volume and capacity estimate for 10% sampling, including expected TB/day, peak ingest rate, Elasticsearch disk headroom, shard/index impact, retention period, and cost increase.\n- Define and test a rollback plan: exact flag/config change, who performs it, expected time to reduce volume, how to verify rollback, and escalation path if Fluentd/ES is already degraded.\n- Add or confirm alerts before rollout for Fluentd buffer usage/backpressure, dropped records, retry rates, CPU/memory, Elasticsearch ingest rejections, indexing latency, disk watermarks, cluster health, and log pipeline error rates.\n- Add rollout gates with concrete thresholds, for example: no Fluentd backpressure, no dropped logs, ES disk below agreed watermark, ingest rejection rate near zero, search-service latency/error rate unchanged, and cost/volume within forecast.\n- Run a production canary at the 5% pod stage and hold long enough to cover peak traffic before advancing. Do not proceed to 25% or 100% without reviewing observed log volume and pipeline health.\n- Confirm whether Elasticsearch/Fluentd infrastructure is shared. If shared, assess cross-service blast radius and reserve capacity or isolate the increased search-service logs.\n- Consider making the 10% sampling increase time-bound for the debugging campaign, or add an automatic reversion date to avoid permanently increasing volume/cost.\n- Confirm privacy/compliance acceptance for increasing sampled logs containing `user_id`, including retention and access controls.\n\nFinal Decision: FIX-BEFORE-SHIP\n\nDecision Rationale: The change may be operationally safe if capacity and rollback are proven, but the submitted bundle lacks critical production evidence. The missing rollback plan, alerting, capacity analysis, and rollout gates are fix-before-ship items for a change that can increase logging volume by approximately 10x and potentially impact shared observability infrastructure.",
+  "usage": {
+    "prompt_tokens": 484,
+    "completion_tokens": 1176,
+    "total_tokens": 1660,
+    "cost": 0.0377,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0377,
+      "upstream_inference_prompt_cost": 0.00242,
+      "upstream_inference_completions_cost": 0.03528
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 356,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.0377,
+  "latency_seconds": 26.74,
+  "status": "ok",
+  "api_response_id": "gen-1782164843-c1m8Z5msmZogqXBM2nMK"
+}

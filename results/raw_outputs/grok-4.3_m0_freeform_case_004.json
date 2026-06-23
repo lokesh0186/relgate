@@ -1,0 +1,38 @@
+{
+  "case_id": "case_004",
+  "case_type": "infrastructure_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:42:36.117444+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Upgrade RDS instance class from db.r5.large to db.r5.2xlarge for payments-db to address CPU saturation during peak\nDiff / Config: # terraform/modules/rds/payments.tf\nresource \"aws_db_instance\" \"payments_db\" {\n-  instance_class    = \"db.r5.large\"\n+  instance_class    = \"db.r5.2xlarge\"\n   engine            = \"postgres\"\n   engine_version    = \"14.8\"\n   multi_az          = true\n   storage_encrypted = true\n   allocated_storage = 500\n}\nService Context: payments-db (PostgreSQL 14.8, Multi-AZ), serves payment-service. Processes ~$2.1M transactions/day. Current CPU peaks at 89%.\nDeployment Plan: terraform apply\nRollback Plan: can downgrade\nObservability Evidence: CloudWatch RDS dashboard: console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=payments-rds\nAlerting Evidence: [not provided]\nOwner / On-Call: DBA team owns payments-db. On-call channel: #dba-oncall. Primary: @dba-lead\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change performs a vertical scale-up of a high-value, revenue-critical PostgreSQL Multi-AZ instance via a one-line Terraform edit. While the motivation (CPU saturation) is clear, the bundle supplies almost no evidence of pre-change validation, post-change acceptance criteria, alerting coverage, or rollback safety. Several sections that would normally contain production safeguards are explicitly empty.\n\nRisks_or_missing_information:\n- No validation or load-test evidence; the only observability reference is an existing CloudWatch dashboard with no new metrics or canary checks defined for the larger instance.\n- Rollback plan is stated as \u201ccan downgrade\u201d with no assessment of RDS instance-class change behavior (potential Multi-AZ failover, connection resets, or parameter-group incompatibilities) and no tested rollback runbook.\n- Alerting, SLO impact, and blast-radius sections are blank despite the service processing $2.1 M transactions/day.\n\nRecommended_actions:\n- Execute a Terraform plan in a staging account, perform a controlled instance-class change during a maintenance window, capture failover/reboot timing, and document exact connection-reset behavior.\n- Add or update CloudWatch alarms for CPU, I/O, connection count, and replication lag with explicit thresholds for the new class; attach them to #dba-oncall and the payments-service on-call rotation before the production apply.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Critical production database change lacks validation, rollback evidence, and alerting; these gaps must be closed prior to deployment.",
+  "usage": {
+    "prompt_tokens": 580,
+    "completion_tokens": 816,
+    "total_tokens": 1396,
+    "cost": 0.0026306,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0026306,
+      "upstream_inference_prompt_cost": 0.0005906,
+      "upstream_inference_completions_cost": 0.00204
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 517,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002631,
+  "latency_seconds": 8.49,
+  "status": "ok",
+  "api_response_id": "gen-1782164547-KnTh2QP720MHD86gMrC0"
+}

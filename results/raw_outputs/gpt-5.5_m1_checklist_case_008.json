@@ -1,0 +1,38 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:50:25.572797+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.\nDiff / Config: --- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10\nService Context: notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.\nDeployment Plan: Update config and restart workers.\nRollback Plan: Set concurrency back to 5 if issues arise.\nObservability Evidence: CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - Includes a CloudWatch SQS metrics dashboard link for the notifications queue, though it should be expanded to include worker errors/latency and downstream provider impact.\nG2: FAIL - No alerting evidence provided for backlog growth, worker failures, throttling, downstream provider errors, or DLQ growth.\nG3: FAIL - Deployment is a direct config update/restart with no staged rollout, canary, feature flag, or blast-radius control.\nG4: FAIL - Rollback says to set concurrency back to 5, but the trigger condition is vague: \u201cif issues arise\u201d is not specific or measurable.\nG5: FAIL - Owner, on-call, and escalation path are not provided.\nG6: FAIL - No SLO, error-budget impact, or customer-impact risk assessment is provided.\nG7: FAIL - No staging test, dry-run, load test, backtest, or verification evidence is provided.\n\nRecommended_actions:\n- Add production safety controls: staged rollout from 5 to 10 to 20 workers, define measurable rollback triggers such as elevated provider error rate, DLQ growth, worker error rate, latency, or SQS age-of-oldest-message regression, and document the exact rollback command/config change.\n- Provide missing readiness evidence: alert coverage, owner/on-call/escalation path, SLO/customer-risk assessment, and validation results from staging or load testing that confirm downstream email/push/SMS providers can tolerate the increased concurrency.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change has limited observability but lacks alerting, rollout safety, measurable rollback triggers, ownership, reliability impact assessment, and validation evidence for a 4x concurrency increase affecting downstream notification providers.",
+  "usage": {
+    "prompt_tokens": 569,
+    "completion_tokens": 527,
+    "total_tokens": 1096,
+    "cost": 0.018655,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.018655,
+      "upstream_inference_prompt_cost": 0.002845,
+      "upstream_inference_completions_cost": 0.01581
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 167,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.018655,
+  "latency_seconds": 11.85,
+  "status": "ok",
+  "api_response_id": "gen-1782165013-maCrq1Zg3O5FlJrLzE0H"
+}

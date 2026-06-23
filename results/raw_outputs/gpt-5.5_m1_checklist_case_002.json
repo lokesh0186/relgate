@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:39:27.600150+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: FAIL - Datadog is mentioned, but no concrete dashboard, metric names, log queries, or impact-detection evidence are provided.\nG2: FAIL - Alerting evidence is explicitly not provided; no alerts for cache miss rate, auth latency, Redis load, or downstream impact.\nG3: FAIL - Deployment is planned to all auth-service instances simultaneously, with no staged rollout, canary, feature flag, or blast-radius control.\nG4: FAIL - Rollback says only \u201ccan revert config\u201d and does not include a specific procedure or trigger condition.\nG5: FAIL - Owner, on-call, and escalation path are not provided.\nG6: PASS - The bundle states customer-impact risk: cache miss rate may increase ~12x, auth p99 latency may spike to 200ms+, and all authenticated users may be affected.\nG7: FAIL - No test, dry-run, staging, backtest, or verification evidence is provided.\n\nRecommended_actions:\n- Add concrete observability and alerting: Datadog dashboard links or metric names for auth p99 latency, Redis cache hit/miss rate, Redis CPU/memory/evictions, auth error rate, and downstream service latency/errors; add alerts with thresholds.\n- Replace simultaneous rollout with a staged/canary rollout, e.g. 1% / 10% / 25% / 50% / 100%, with hold times and promotion criteria.\n- Define a rollback plan with explicit trigger conditions, e.g. auth p99 latency > threshold for N minutes, auth error rate increase, Redis saturation, or downstream error spikes; include exact revert steps.\n- Identify service owner, on-call rotation, and escalation path before deployment.\n- Validate in staging or with a production canary/backtest to measure cache miss increase, Redis/database load, and auth latency impact before full rollout.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change has broad production blast radius and known latency risk, but lacks concrete observability, alerting, staged rollout, rollback triggers, ownership, and validation evidence.",
+  "usage": {
+    "prompt_tokens": 585,
+    "completion_tokens": 613,
+    "total_tokens": 1198,
+    "cost": 0.021315,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.021315,
+      "upstream_inference_prompt_cost": 0.002925,
+      "upstream_inference_completions_cost": 0.01839
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 179,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.021315,
+  "latency_seconds": 13.95,
+  "status": "ok",
+  "api_response_id": "gen-1782164353-rvvdQyas3sncRXPfwkhV"
+}

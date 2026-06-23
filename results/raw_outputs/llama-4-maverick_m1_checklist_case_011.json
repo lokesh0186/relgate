@@ -1,0 +1,38 @@
+{
+  "case_id": "case_011",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "READY",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:56:48.272302+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase feature flag 'new_search_ranking' from 25% to 75% of users. The flag has been at 25% for 14 days with positive metrics. This is step 3 of a 4-stage rollout plan.\nDiff / Config: --- a/flags/search_ranking.yaml\n+++ b/flags/search_ranking.yaml\n@@ -2,7 +2,7 @@\n new_search_ranking:\n   enabled: true\n-  rollout_percentage: 25\n+  rollout_percentage: 75\n   stage: 3_of_4\n   targeting:\n     - all_users\n   kill_switch: enabled\nService Context: search-service handles 120k queries/min. New ranking algorithm uses ML model v2 (deployed 30 days ago). At 25% rollout: +3.2% click-through rate, -1.1% bounce rate, no latency regression.\nDeployment Plan: Staged rollout: 5% (done, 7 days) -> 25% (done, 14 days) -> 75% (this change, planned 7 days) -> 100%. Flag change is instant via config push. No deployment needed.\nRollback Plan: Rollback trigger: if search_ctr drops >5% relative or p99 latency exceeds 200ms for 5 minutes. Rollback action: set rollout_percentage back to 25 via LaunchDarkly UI or CLI 'ld flag update new_search_ranking --rollout 25'. Kill switch disables instantly if critical.\nObservability Evidence: Grafana dashboard: grafana.internal/d/search-ranking-experiment (panels: CTR by cohort, bounce rate, p99 latency by flag variant, error rate). LaunchDarkly experimentation metrics tracked. Segment-level analytics in Amplitude for A/B comparison.\nAlerting Evidence: Alerts: search_error_rate > 1% for 3min (PagerDuty critical). search_p99_latency > 200ms for 5min (PagerDuty warning). search_ctr_drop > 5% relative over 1hr (Slack #search-alerts). All alerts have been active during 25% rollout with zero firings.\nOwner / On-Call: Owner: search-team. On-call: @search-oncall rotation (3 engineers). Escalation: search-lead (Maria Chen) -> Engineering Director. Product owner: Alex Kim (approved 75% stage).\nSLO / Reliability Impact: search-service SLO: 99.95% availability, p99 < 150ms. At 25% rollout over 14 days: SLO maintained with 0 violations. Error budget: 85% remaining. Projected impact at 75%: no SLO risk based on 25% performance data.\nBlast Radius: search-service only. Flag is client-side evaluated so backend behavior unchanged. Worst case: 75% of users see suboptimal ranking (reverts in <30s via kill switch). No cascading failure risk.\nValidation Evidence: 14-day A/B test at 25% with statistical significance (p<0.01) on CTR improvement. Load tested search-service at full traffic with new ranking: no latency difference. Integration tests pass with both flag states. Manual QA on 50 representative queries confirmed relevance improvement.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - The bundle includes concrete dashboard/metric/log evidence to detect impact, such as Grafana dashboard with relevant panels, LaunchDarkly experimentation metrics, and Segment-level analytics in Amplitude.\nG2: PASS - The bundle includes alert coverage for failure modes, such as search_error_rate, search_p99_latency, and search_ctr_drop alerts.\nG3: PASS - The bundle includes a staged rollout plan with a feature flag, which allows for blast-radius control.\nG4: PASS - The bundle includes a specific rollback plan with trigger conditions, such as search_ctr drop or p99 latency exceeding threshold, and a clear rollback action.\nG5: PASS - The bundle identifies the owner (search-team), on-call (@search-oncall rotation), and escalation path (search-lead -> Engineering Director).\nG6: PASS - The bundle states the SLO (99.95% availability, p99 < 150ms), error-budget (85% remaining), and customer-impact risk, which is projected to be low based on 25% performance data.\nG7: PASS - The bundle includes test evidence, such as A/B test results, load testing, integration tests, and manual QA, which validate the change.\n\nRecommended_actions:\n- Monitor the Grafana dashboard and LaunchDarkly experimentation metrics closely after the rollout to detect any potential issues.\n- Review the alerting thresholds and ensure they are still relevant after the rollout.\n\nFinal Decision: READY\nDecision Rationale: The change bundle provides comprehensive evidence to support the production-readiness gates, including observability, alerting, rollout safety, rollback plan, ownership, reliability impact, and validation. The staged rollout plan and feature flag allow for controlled exposure, and the rollback plan is well-defined. Overall, the change is well-planned and executed, and the risk is mitigated.",
+  "usage": {
+    "prompt_tokens": 1022,
+    "completion_tokens": 376,
+    "total_tokens": 1398,
+    "cost": 0.0003789,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0003789,
+      "upstream_inference_prompt_cost": 0.0001533,
+      "upstream_inference_completions_cost": 0.0002256
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000379,
+  "latency_seconds": 25.17,
+  "status": "ok",
+  "api_response_id": "gen-1782165383-aJToXwshZOmcsZmMSzzf"
+}

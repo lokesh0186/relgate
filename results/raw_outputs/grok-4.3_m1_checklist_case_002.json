@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:39:32.408498+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: FAIL - Only generic \"Datadog\" mention; no concrete dashboards, metrics, or logs for TTL impact or cache-warm behavior.\nG2: FAIL - Explicitly marked [not provided]; no alert coverage for increased misses or latency.\nG3: FAIL - Simultaneous rollout to all instances; no canary, staged, or feature-flag controls.\nG4: FAIL - \"can revert config\" lacks specificity and trigger conditions.\nG5: FAIL - Explicitly marked [not provided]; no owner/on-call/escalation details.\nG6: PASS - Explicitly states cache-miss increase, p99 latency spike, and downstream blast radius.\nG7: FAIL - Explicitly marked [not provided]; no tests, staging, or verification evidence.\n\nRecommended_actions:\n- Add concrete Datadog dashboard links + alerts for cache-hit ratio, p99 auth latency, and error rate before proceeding.\n- Replace simultaneous rollout with a staged/canary plan (e.g., 5% \u2192 25% \u2192 100%) and define explicit rollback triggers (e.g., hit-ratio <80% or p99 >150 ms for 5 min).\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Multiple critical gates (G1-G5, G7) are missing required artifacts; only G6 is addressed.",
+  "usage": {
+    "prompt_tokens": 704,
+    "completion_tokens": 631,
+    "total_tokens": 1335,
+    "cost": 0.0023231,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0023231,
+      "upstream_inference_prompt_cost": 0.0007456,
+      "upstream_inference_completions_cost": 0.0015775
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 360,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002323,
+  "latency_seconds": 4.73,
+  "status": "ok",
+  "api_response_id": "gen-1782164368-bLRp23yjQuzWY5wVV721"
+}

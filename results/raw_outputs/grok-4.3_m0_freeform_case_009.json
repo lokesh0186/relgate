@@ -1,0 +1,38 @@
+{
+  "case_id": "case_009",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:51:35.361099+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Enable new payment flow (Stripe v2 integration) for 100% of users via feature flag. Previously tested at 5% for 1 week.\nDiff / Config: --- a/flags/payments.yaml\n+++ b/flags/payments.yaml\n@@ -1,5 +1,5 @@\n new_payment_flow:\n   enabled: true\n-  rollout_percentage: 5\n+  rollout_percentage: 100\n   targeting:\n     - all_users\nService Context: checkout-service processes $2M daily GMV. New payment flow uses Stripe v2 API with different error handling. 5% rollout showed 0.1% higher failure rate than v1.\nDeployment Plan: Update feature flag config to 100%. Immediate effect, no deployment needed.\nRollback Plan: [not provided]\nObservability Evidence: Payment success rate dashboard: grafana.internal/d/checkout-payments. Stripe webhook latency panel available.\nAlerting Evidence: Alert: payment_failure_rate > 2% for 5min triggers PagerDuty. Alert: checkout_latency_p99 > 3s.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: All checkout users globally, $2M daily GMV at risk\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change proposes flipping the new_payment_flow flag from 5% to 100% with no code deploy, despite a documented 0.1% higher failure rate, different Stripe v2 error handling, and $2M daily GMV at stake. Multiple critical sections (rollback, owner, SLO impact, validation evidence) are empty, and the plan relies on existing generic alerts without new-flow-specific instrumentation or a staged increase. This is a high-risk, high-blast-radius change that lacks the controls expected for a payments system.\n\nRisks_or_missing_information:\n- No rollback plan or tested procedure exists; an immediate 100% flag change leaves no fast recovery path if failure rate or latency degrades further.\n- 0.1% higher failure rate at 5% implies ~$2k+ daily lost GMV at 100% with unknown customer and downstream effects; no SLOs, error-budget impact, or new-flow-specific metrics/dashboards are defined.\n- Validation evidence, on-call owner, and gradual rollout steps are absent; existing alerts (failure >2%, p99 >3s) may be too coarse to catch Stripe v2 regressions early.\n\nRecommended_actions:\n- Define and test an explicit rollback (flag revert + any required data fixes), including a time-boxed canary at 25% with automated rollback triggers before any larger increase.\n- Add owner/on-call, new payment success/error SLOs with error budget, and validation evidence from the 5% run (including error taxonomy and customer impact); require sign-off before proceeding.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Critical gaps in rollback, observability, and risk quantification for a revenue-critical path make immediate 100% rollout unsafe.",
+  "usage": {
+    "prompt_tokens": 582,
+    "completion_tokens": 810,
+    "total_tokens": 1392,
+    "cost": 0.0026181,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0026181,
+      "upstream_inference_prompt_cost": 0.0005931,
+      "upstream_inference_completions_cost": 0.002025
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 458,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002618,
+  "latency_seconds": 7.06,
+  "status": "ok",
+  "api_response_id": "gen-1782165088-Zw3VqubjjECjMiZOMR7o"
+}

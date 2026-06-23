@@ -1,0 +1,38 @@
+{
+  "case_id": "case_003",
+  "case_type": "kubernetes_resource_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:41:10.871422+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase memory limit from 512Mi to 2Gi for order-service pods to resolve recurring OOMKill events\nDiff / Config: # k8s/order-service/deployment.yaml\nspec:\n  containers:\n  - name: order-service\n    resources:\n      requests:\n-       memory: 256Mi\n+       memory: 1Gi\n      limits:\n-       memory: 512Mi\n+       memory: 2Gi\n        cpu: 500m\nService Context: order-service (Go), 12 pods across 3 AZs, EKS cluster prod-us-east-1. Current node pool: m5.2xlarge (32Gi each).\nDeployment Plan: Rolling update with maxSurge=1 maxUnavailable=0. Pods replaced one at a time over ~15 minutes.\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/order-svc-resources showing memory usage trends and OOMKill count.\nAlerting Evidence: PagerDuty alert 'order-service-oomkill' fires when OOMKill count > 2 in 5m window. Alert has fired 14 times this week.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: order-service only. Node memory utilization will increase from 68% to ~74% per node.\nValidation Evidence: Load test in staging with 2Gi limit showed 0 OOMKills under 2x production traffic for 4 hours.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change bundle proposes increasing the memory limit for order-service pods to mitigate recurring OOMKill events. While the change is well-motivated and has some validation evidence, there are concerns regarding the potential impact on node memory utilization and the lack of certain critical information. The change requires further scrutiny before being deemed production-ready.\n\nRisks_or_missing_information:\n- The rollback plan is not provided, which is critical in case the change has unforeseen negative consequences.\n- The owner/on-call information is missing, making it difficult to hold someone accountable for the change and its outcomes.\n- SLO/Reliability Impact is not specified, which is crucial for understanding the change's potential effects on service reliability and user experience.\n- Although the blast radius is mentioned, the potential cascading effects or node-level risks (e.g., increased memory utilization from 68% to 74%) are not thoroughly analyzed.\n\nRecommended_actions:\n- Provide a clear rollback plan in case the increased memory limit causes unexpected issues.\n- Include the owner/on-call information for accountability and support.\n- Specify the SLO/Reliability Impact to understand the change's potential effects on service reliability.\n- Perform a more detailed analysis of the potential node-level risks and cascading effects.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary for a thorough review, including a rollback plan, owner/on-call details, and SLO/Reliability Impact. While the change is motivated by a valid issue (OOMKill events) and has some validation evidence, these gaps need to be addressed before the change can be considered production-ready.",
+  "usage": {
+    "prompt_tokens": 520,
+    "completion_tokens": 323,
+    "total_tokens": 843,
+    "cost": 0.0002718,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0002718,
+      "upstream_inference_prompt_cost": 7.8e-05,
+      "upstream_inference_completions_cost": 0.0001938
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000272,
+  "latency_seconds": 8.71,
+  "status": "ok",
+  "api_response_id": "gen-1782164462-50urrXjIwfqhXSZbYTIa"
+}

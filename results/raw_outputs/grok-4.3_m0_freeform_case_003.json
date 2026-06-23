@@ -1,0 +1,38 @@
+{
+  "case_id": "case_003",
+  "case_type": "kubernetes_resource_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:41:02.146222+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase memory limit from 512Mi to 2Gi for order-service pods to resolve recurring OOMKill events\nDiff / Config: # k8s/order-service/deployment.yaml\nspec:\n  containers:\n  - name: order-service\n    resources:\n      requests:\n-       memory: 256Mi\n+       memory: 1Gi\n      limits:\n-       memory: 512Mi\n+       memory: 2Gi\n        cpu: 500m\nService Context: order-service (Go), 12 pods across 3 AZs, EKS cluster prod-us-east-1. Current node pool: m5.2xlarge (32Gi each).\nDeployment Plan: Rolling update with maxSurge=1 maxUnavailable=0. Pods replaced one at a time over ~15 minutes.\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/order-svc-resources showing memory usage trends and OOMKill count.\nAlerting Evidence: PagerDuty alert 'order-service-oomkill' fires when OOMKill count > 2 in 5m window. Alert has fired 14 times this week.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: order-service only. Node memory utilization will increase from 68% to ~74% per node.\nValidation Evidence: Load test in staging with 2Gi limit showed 0 OOMKills under 2x production traffic for 4 hours.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change increases order-service memory requests/limits 4x to address OOMKills, using a conservative rolling update on an EKS cluster with headroom on m5.2xlarge nodes. However, the bundle lacks a rollback plan, owner/on-call details, SLO impact assessment, and evidence that the new limits were derived from production memory profiles rather than arbitrary scaling. Node utilization rises to ~74% and the 12-pod footprint grows substantially, yet no capacity or co-tenancy review is included. Validation is limited to a 4-hour staging load test.\n\nRisks_or_missing_information:\n- No rollback plan or procedure is defined, leaving no documented path to revert if the larger pods cause scheduling failures, increased latency, or node pressure.\n- Owner/on-call, SLO impact, and actual production memory usage histograms (p95/p99) are absent, so it is unclear who owns post-deploy monitoring or whether the change trades one reliability signal for another.\n- 4x memory increase with unchanged CPU and no HPA/co-tenancy analysis risks new throttling, higher costs, or eviction of other pods once aggregate requests approach node capacity.\n\nRecommended_actions:\n- Add an explicit rollback plan (e.g., git revert + kubectl apply with previous resource values and a 5-minute observation window) and include it in the change record before merge.\n- Require the team to supply current production memory usage metrics (from the cited Grafana dashboard) justifying 1Gi/2Gi, plus confirmation that the on-call rotation has been notified and the change is tracked against the service SLO.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, ownership, and justification data create unacceptable deployment risk for a resource change that directly affects scheduling and node capacity.",
+  "usage": {
+    "prompt_tokens": 630,
+    "completion_tokens": 916,
+    "total_tokens": 1546,
+    "cost": 0.0029431,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0029431,
+      "upstream_inference_prompt_cost": 0.0006531,
+      "upstream_inference_completions_cost": 0.00229
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 563,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002943,
+  "latency_seconds": 9.79,
+  "status": "ok",
+  "api_response_id": "gen-1782164453-6k20GF8e24Wjldgypfz5"
+}

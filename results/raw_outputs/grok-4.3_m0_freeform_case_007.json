@@ -1,0 +1,38 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:47:57.532580+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.\nDiff / Config: --- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code\nService Context: search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.\nDeployment Plan: Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.\nRollback Plan: [not provided]\nObservability Evidence: Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.\nAlerting Evidence: [not provided]\nOwner / On-Call: observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary\nSLO / Reliability Impact: [not provided]\nBlast Radius: search-service only, 12 pods across 2 AZs\nValidation Evidence: Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change proposes a 10x increase in logging sampling for a high-volume service (100k qpm) without any capacity modeling, cost analysis, or pipeline stress validation at prod scale. Multiple critical sections are empty (rollback, alerting, SLO impact), and the rollout relies on an unspecified feature flag mechanism for a static YAML config value. Current evidence is limited to a 24h staging run that does not demonstrate ES/Fluentd headroom at 20 TB/day.\n\nRisks_or_missing_information:\n- 10x log volume growth (2 TB \u2192 ~20 TB/day) risks Fluentd backpressure, ES ingestion saturation, increased query latency/costs, and retention policy violations with no capacity or budget evidence provided.\n- No rollback plan, no alerting for pipeline saturation or volume anomalies, and no documented SLO/reliability impact assessment despite the change touching observability for a latency-sensitive service.\n- Deployment mechanism unclear (feature flag vs. direct config rollout) and staging validation likely under-scale relative to prod traffic.\n\nRecommended_actions:\n- Require explicit rollback procedure (including how to revert sampling_rate and flush any queued logs) plus pre-staged runbook before any prod change.\n- Obtain written confirmation from ES/Fluentd owners on daily ingest capacity, 30-day retention feasibility, and new alerts for backpressure and daily volume >3 TB before approving.\n- Re-run validation at full prod-like load (or with synthetic 10x traffic) and document measured pipeline latency, drop rates, and pod CPU/memory impact.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, alerting, capacity evidence, and SLO assessment combined with an order-of-magnitude storage increase make the change unsafe to ship in current form.",
+  "usage": {
+    "prompt_tokens": 601,
+    "completion_tokens": 860,
+    "total_tokens": 1461,
+    "cost": 0.00269965,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 192,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00269965,
+      "upstream_inference_prompt_cost": 0.00054965,
+      "upstream_inference_completions_cost": 0.00215
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 509,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.0027,
+  "latency_seconds": 7.52,
+  "status": "ok",
+  "api_response_id": "gen-1782164870-1j5yNfIquNYHlFgwxjp7"
+}

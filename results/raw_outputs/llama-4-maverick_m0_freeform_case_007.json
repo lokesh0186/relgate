@@ -1,0 +1,38 @@
+{
+  "case_id": "case_007",
+  "case_type": "observability_logging",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:48:14.863889+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Increase structured logging sampling rate from 1% to 10% in search-service to improve debug coverage for intermittent latency spikes.\nDiff / Config: --- a/config/logging.yaml\n+++ b/config/logging.yaml\n@@ -3,7 +3,7 @@\n service: search-service\n format: json\n level: info\n-sampling_rate: 0.01\n+sampling_rate: 0.10\n fields:\n   - request_id\n   - user_id\n   - latency_ms\n   - status_code\nService Context: search-service handles 100k queries/min. Logs ship to Elasticsearch via Fluentd. Current storage: 2TB/day at 1% sampling.\nDeployment Plan: Feature flag gradual rollout: 5% of pods -> 25% -> 100% over 3 days.\nRollback Plan: [not provided]\nObservability Evidence: Log volume dashboard: grafana.internal/d/search-log-volume. Fluentd pipeline metrics in CloudWatch.\nAlerting Evidence: [not provided]\nOwner / On-Call: observability-team, Slack: @obs-oncall, PagerDuty rotation: obs-primary\nSLO / Reliability Impact: [not provided]\nBlast Radius: search-service only, 12 pods across 2 AZs\nValidation Evidence: Tested in staging with 10% sampling for 24h. No Fluentd backpressure. ES ingestion stable.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: The change increases the structured logging sampling rate in search-service from 1% to 10%, aiming to improve debug coverage for intermittent latency spikes. While the change has been tested in staging and has a gradual rollout plan, several critical details are missing, and potential risks need to be addressed before production deployment.\n\nRisks_or_missing_information:\n- The current storage usage is 2TB/day at 1% sampling, but the expected storage impact at 10% sampling is not explicitly calculated or discussed.\n- The Rollback Plan is not provided, which is crucial in case the increased logging rate causes unforeseen issues.\n- SLO / Reliability Impact is not assessed, which is necessary to understand the potential effects on service reliability and user experience.\n- Alerting Evidence is missing, making it unclear if there are existing alerts that could be triggered by the increased log volume or changes in log patterns.\n\nRecommended_actions:\n- Calculate and document the expected storage impact at 10% sampling rate to ensure Elasticsearch and Fluentd can handle the increased log volume.\n- Develop and document a Rollback Plan to quickly revert the change if issues arise during or after rollout.\n- Assess and document the SLO / Reliability Impact to understand potential effects on service reliability and user experience.\n- Review and document Alerting Evidence to ensure that existing alerts are appropriate for the changed logging behavior.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information necessary to assess the production readiness of the change fully. Addressing the identified risks and gaps is essential before deploying the change to production.",
+  "usage": {
+    "prompt_tokens": 490,
+    "completion_tokens": 316,
+    "total_tokens": 806,
+    "cost": 0.0002631,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0002631,
+      "upstream_inference_prompt_cost": 7.35e-05,
+      "upstream_inference_completions_cost": 0.0001896
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000263,
+  "latency_seconds": 17.3,
+  "status": "ok",
+  "api_response_id": "gen-1782164877-piyKJGREknDWWrawICIT"
+}

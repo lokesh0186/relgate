@@ -1,0 +1,38 @@
+{
+  "case_id": "case_003",
+  "case_type": "kubernetes_resource_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:41:27.612119+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase memory limit from 512Mi to 2Gi for order-service pods to resolve recurring OOMKill events\nDiff / Config: # k8s/order-service/deployment.yaml\nspec:\n  containers:\n  - name: order-service\n    resources:\n      requests:\n-       memory: 256Mi\n+       memory: 1Gi\n      limits:\n-       memory: 512Mi\n+       memory: 2Gi\n        cpu: 500m\nService Context: order-service (Go), 12 pods across 3 AZs, EKS cluster prod-us-east-1. Current node pool: m5.2xlarge (32Gi each).\nDeployment Plan: Rolling update with maxSurge=1 maxUnavailable=0. Pods replaced one at a time over ~15 minutes.\nRollback Plan: [not provided]\nObservability Evidence: Grafana dashboard: grafana.internal/d/order-svc-resources showing memory usage trends and OOMKill count.\nAlerting Evidence: PagerDuty alert 'order-service-oomkill' fires when OOMKill count > 2 in 5m window. Alert has fired 14 times this week.\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: order-service only. Node memory utilization will increase from 68% to ~74% per node.\nValidation Evidence: Load test in staging with 2Gi limit showed 0 OOMKills under 2x production traffic for 4 hours.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS | FAIL - Grafana dashboard with memory/OOMKill metrics provided\nG2: PASS | FAIL - PagerDuty alert exists for OOMKill threshold\nG3: PASS | FAIL - Rolling update (maxSurge=1, maxUnavailable=0) with explicit blast radius\nG4: PASS | FAIL - Rollback plan explicitly marked [not provided]\nG5: PASS | FAIL - Owner/on-call explicitly marked [not provided]\nG6: PASS | FAIL - SLO/impact section explicitly marked [not provided]\nG7: PASS | FAIL - Staging load test under 2x traffic for 4h provided\n\nRecommended_actions:\n- Add explicit rollback plan with trigger condition (e.g., post-change OOMKill rate or latency SLO breach)\n- Identify owner, on-call rotation, and escalation path before merge\n- Document SLO impact or error-budget risk (even if \"none expected\")\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, ownership, and reliability-impact details block production readiness despite strong observability/validation coverage.",
+  "usage": {
+    "prompt_tokens": 779,
+    "completion_tokens": 568,
+    "total_tokens": 1347,
+    "cost": 0.00225935,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00225935,
+      "upstream_inference_prompt_cost": 0.00083935,
+      "upstream_inference_completions_cost": 0.00142
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 347,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002259,
+  "latency_seconds": 4.68,
+  "status": "ok",
+  "api_response_id": "gen-1782164483-3ES2XZCmX4z35cDTca1P"
+}

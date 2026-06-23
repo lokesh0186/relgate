@@ -1,0 +1,38 @@
+{
+  "case_id": "case_011",
+  "case_type": "feature_flag_rollout",
+  "expected_decision": "READY",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:56:23.076248+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase feature flag 'new_search_ranking' from 25% to 75% of users. The flag has been at 25% for 14 days with positive metrics. This is step 3 of a 4-stage rollout plan.\nDiff / Config: --- a/flags/search_ranking.yaml\n+++ b/flags/search_ranking.yaml\n@@ -2,7 +2,7 @@\n new_search_ranking:\n   enabled: true\n-  rollout_percentage: 25\n+  rollout_percentage: 75\n   stage: 3_of_4\n   targeting:\n     - all_users\n   kill_switch: enabled\nService Context: search-service handles 120k queries/min. New ranking algorithm uses ML model v2 (deployed 30 days ago). At 25% rollout: +3.2% click-through rate, -1.1% bounce rate, no latency regression.\nDeployment Plan: Staged rollout: 5% (done, 7 days) -> 25% (done, 14 days) -> 75% (this change, planned 7 days) -> 100%. Flag change is instant via config push. No deployment needed.\nRollback Plan: Rollback trigger: if search_ctr drops >5% relative or p99 latency exceeds 200ms for 5 minutes. Rollback action: set rollout_percentage back to 25 via LaunchDarkly UI or CLI 'ld flag update new_search_ranking --rollout 25'. Kill switch disables instantly if critical.\nObservability Evidence: Grafana dashboard: grafana.internal/d/search-ranking-experiment (panels: CTR by cohort, bounce rate, p99 latency by flag variant, error rate). LaunchDarkly experimentation metrics tracked. Segment-level analytics in Amplitude for A/B comparison.\nAlerting Evidence: Alerts: search_error_rate > 1% for 3min (PagerDuty critical). search_p99_latency > 200ms for 5min (PagerDuty warning). search_ctr_drop > 5% relative over 1hr (Slack #search-alerts). All alerts have been active during 25% rollout with zero firings.\nOwner / On-Call: Owner: search-team. On-call: @search-oncall rotation (3 engineers). Escalation: search-lead (Maria Chen) -> Engineering Director. Product owner: Alex Kim (approved 75% stage).\nSLO / Reliability Impact: search-service SLO: 99.95% availability, p99 < 150ms. At 25% rollout over 14 days: SLO maintained with 0 violations. Error budget: 85% remaining. Projected impact at 75%: no SLO risk based on 25% performance data.\nBlast Radius: search-service only. Flag is client-side evaluated so backend behavior unchanged. Worst case: 75% of users see suboptimal ranking (reverts in <30s via kill switch). No cascading failure risk.\nValidation Evidence: 14-day A/B test at 25% with statistical significance (p<0.01) on CTR improvement. Load tested search-service at full traffic with new ranking: no latency difference. Integration tests pass with both flag states. Manual QA on 50 representative queries confirmed relevance improvement.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - Grafana dashboard + LaunchDarkly/Amplitude metrics explicitly listed with relevant panels.\nG2: PASS - Three concrete alerts (error rate, p99 latency, CTR drop) with PagerDuty/Slack routing and zero firings at 25%.\nG3: PASS - Explicit 4-stage feature-flag rollout (5/25/75/100) with kill switch and client-side evaluation.\nG4: PASS - Specific rollback triggers (>5% CTR drop or p99>200 ms for 5 min) plus exact CLI/UI rollback steps.\nG5: PASS - Owner (search-team), on-call rotation, and escalation path (Maria Chen \u2192 Director) all named.\nG6: PASS - SLO (99.95%, p99<150 ms), error budget (85% remaining), and \u201cno projected risk\u201d statement included.\nG7: PASS - 14-day statistically significant A/B test, load test, integration tests, and manual QA all documented.\n\nRecommended_actions:\n- Enable real-time CTR/p99 monitoring and on-call paging for the first 30 min after the 75% push.\n- Schedule a 24-hour checkpoint review with search-lead before advancing to 100%.\n\nFinal Decision: READY\nDecision Rationale: All seven gates are satisfied with concrete, verifiable artifacts already present in the bundle.",
+  "usage": {
+    "prompt_tokens": 1124,
+    "completion_tokens": 769,
+    "total_tokens": 1893,
+    "cost": 0.0031931,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0031931,
+      "upstream_inference_prompt_cost": 0.0012706,
+      "upstream_inference_completions_cost": 0.0019225
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 498,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.003193,
+  "latency_seconds": 7.03,
+  "status": "ok",
+  "api_response_id": "gen-1782165376-94nOuHHM1u0ryBz9s9Gu"
+}

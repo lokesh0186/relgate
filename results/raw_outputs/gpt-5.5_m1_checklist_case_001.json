@@ -1,0 +1,38 @@
+{
+  "case_id": "case_001",
+  "case_type": "database_migration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:37:48.613705+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Add NOT NULL column 'shipping_priority' to orders table with DEFAULT value to avoid locking on large table\nDiff / Config: -- migration/V047__add_shipping_priority.sql\nALTER TABLE orders ADD COLUMN shipping_priority INTEGER NOT NULL DEFAULT 0;\nCREATE INDEX CONCURRENTLY idx_orders_shipping_priority ON orders(shipping_priority);\nService Context: order-service (Go), PostgreSQL 14.8, ~50k orders/day, peak traffic 2-4pm UTC. Table has 18M rows.\nDeployment Plan: Run migration during low-traffic window (3-5am UTC). Application code deployed after migration completes. Feature flag guards new column usage.\nRollback Plan: [not provided]\nObservability Evidence: pg_stat_activity monitored during migration. Slow-query dashboard: grafana.internal/d/pg-slow-queries\nAlerting Evidence: [not provided]\nOwner / On-Call: order-team, #order-oncall Slack channel, @jsmith primary on-call\nSLO / Reliability Impact: should be fine\nBlast Radius: [not provided]\nValidation Evidence: Migration tested on staging (2M row copy of production). Completed in 4.2s with no lock contention.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - Includes pg_stat_activity monitoring and a slow-query Grafana dashboard to detect database impact during migration.\nG2: FAIL - No alerting evidence provided for migration failure modes such as lock contention, elevated query latency, index build failure, or order-service errors.\nG3: PASS - Migration is planned for a low-traffic window and application usage of the new column is guarded by a feature flag.\nG4: FAIL - Rollback plan is explicitly not provided; no trigger condition or recovery steps are defined.\nG5: PASS - Identifies order-team ownership, #order-oncall Slack channel, and @jsmith as primary on-call.\nG6: FAIL - Reliability impact is not meaningfully stated; \u201cshould be fine\u201d does not identify SLO, error-budget impact, or customer-impact risk.\nG7: PASS - Migration was tested in staging on a 2M-row production copy and completed in 4.2s with no lock contention, though production table is larger at 18M rows.\n\nRecommended_actions:\n- Add a concrete rollback/remediation plan with trigger conditions, e.g. abort on lock wait over threshold, elevated order-service latency/errors, or failed concurrent index creation; include exact SQL/operational steps and ownership.\n- Add alert coverage and reliability criteria for the migration window, including order-service error rate/latency, PostgreSQL lock waits, long-running queries, index build progress/failure, and explicit SLO/customer-impact assessment.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change has some observability, ownership, rollout control, and staging validation, but lacks required alerting, rollback, and concrete reliability-impact assessment for a production database migration on an 18M-row table.",
+  "usage": {
+    "prompt_tokens": 592,
+    "completion_tokens": 813,
+    "total_tokens": 1405,
+    "cost": 0.02735,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.02735,
+      "upstream_inference_prompt_cost": 0.00296,
+      "upstream_inference_completions_cost": 0.02439
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 449,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.02735,
+  "latency_seconds": 13.5,
+  "status": "ok",
+  "api_response_id": "gen-1782164255-iWkEP36c1L8eJ2lXqNxg"
+}

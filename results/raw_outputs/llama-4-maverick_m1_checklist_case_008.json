@@ -1,0 +1,38 @@
+{
+  "case_id": "case_008",
+  "case_type": "background_worker_queue",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "meta-llama/llama-4-maverick",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T22:01:23.283699+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Increase SQS consumer concurrency from 5 to 20 workers for notification-service to reduce message processing backlog.\nDiff / Config: --- a/config/worker.yaml\n+++ b/config/worker.yaml\n@@ -1,6 +1,6 @@\n worker:\n   queue: notifications-prod\n-  concurrency: 5\n+  concurrency: 20\n   visibility_timeout: 300\n   max_retries: 3\n   batch_size: 10\nService Context: notification-worker processes ~50k messages/day from SQS. Sends emails, push notifications, SMS via downstream providers. Current avg processing time: 200ms/msg.\nDeployment Plan: Update config and restart workers.\nRollback Plan: Set concurrency back to 5 if issues arise.\nObservability Evidence: CloudWatch SQS metrics dashboard: console.aws.amazon.com/cloudwatch/dashboard/notifications-queue\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: [not provided]\nBlast Radius: [not provided]\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: PASS - The bundle includes a link to a CloudWatch SQS metrics dashboard, providing concrete evidence to detect impact on the SQS queue.\nG2: FAIL - The bundle does not include alert coverage for failure modes, as there is no alerting evidence provided.\nG3: FAIL - The bundle does not include staged rollout, canary, feature flag, or blast-radius control; it plans to update config and restart workers directly.\nG4: PASS - The bundle includes a specific rollback plan with a trigger condition (setting concurrency back to 5 if issues arise).\nG5: FAIL - The bundle does not identify the owner, on-call, and escalation path, as this information is not provided.\nG6: FAIL - The bundle does not state SLO, error-budget, or customer-impact risk, as this information is not provided.\nG7: FAIL - The bundle does not include test, dry-run, staging, backtest, or verification evidence, as this information is not provided.\n\nRecommended_actions:\n- Provide alerting evidence to cover potential failure modes.\n- Implement a staged rollout or canary release to control the blast radius.\n- Identify the owner, on-call, and escalation path for the service.\n- State the SLO, error-budget, or customer-impact risk associated with the change.\n- Include validation evidence such as test results or dry-run data.\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: The change bundle lacks critical information and safety controls, including alerting, staged rollout, ownership details, reliability impact, and validation evidence, making it not ready for production deployment.",
+  "usage": {
+    "prompt_tokens": 576,
+    "completion_tokens": 331,
+    "total_tokens": 907,
+    "cost": 0.00043687,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.00043687,
+      "upstream_inference_prompt_cost": 0.00015552,
+      "upstream_inference_completions_cost": 0.00028135
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.000437,
+  "latency_seconds": 21.87,
+  "status": "ok",
+  "api_response_id": "gen-1782165661-Wk8dDKYCDE6hixVCmRcF"
+}

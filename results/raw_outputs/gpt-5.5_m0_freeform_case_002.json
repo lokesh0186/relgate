@@ -1,0 +1,38 @@
+{
+  "case_id": "case_002",
+  "case_type": "cache_configuration",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "openai/gpt-5.5",
+  "mode": "m0_freeform",
+  "timestamp": "2026-06-22T21:38:55.688900+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer reviewing a cloud/software change for production readiness. You should identify concrete risks, missing information, and fix-before-ship actions. Do not assume evidence exists if it is not present in the change bundle.",
+  "user_prompt": "Please review the following change for production readiness.\n\nImportant: This is a free-form review. Do not use a predefined numbered framework. Read the bundle as a senior SRE would and identify concerns, missing information, and actions before production deployment.\n\n== CHANGE BUNDLE ==\nChange Summary: Reduce Redis TTL for user-session cache from 3600s to 300s to address stale session data bug (JIRA-4821)\nDiff / Config: # redis-config/session-cache.yaml\n- ttl_seconds: 3600\n+ ttl_seconds: 300\n  max_memory: 4gb\n  eviction_policy: allkeys-lru\n  cluster: session-redis-prod.internal:6379\nService Context: auth-service (Node.js), Redis 7.0 cluster, ~200k active sessions at peak. Session cache hit ratio currently 94%.\nDeployment Plan: Deploy config change to all auth-service instances simultaneously via ConfigMap update.\nRollback Plan: can revert config\nObservability Evidence: We have Datadog for monitoring.\nAlerting Evidence: [not provided]\nOwner / On-Call: [not provided]\nSLO / Reliability Impact: Cache miss rate will increase ~12x during transition. Auth latency p99 may spike from 45ms to 200ms+ until cache warms.\nBlast Radius: All authenticated users. Downstream services: order-service, profile-service, notification-service.\nValidation Evidence: [not provided]\n== END CHANGE BUNDLE ==\n\nReturn your answer in this format so it can be scored:\n\nSummary: <2-4 sentence production-readiness review>\nRisks_or_missing_information:\n- <risk or gap 1>\n- <risk or gap 2>\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Summary: This change has a broad production blast radius and explicitly expects a significant cache-miss and auth-latency increase, but the bundle does not provide validation that auth-service, Redis, or the backing session data store can absorb the added load. The deploy and rollback plans are too vague for an all-user auth-path change, and there is no alerting, owner/on-call, canary, or load-test evidence. This should not ship to production as-is.\n\nRisks_or_missing_information:\n- The expected miss-rate increase is substantial, but there is no capacity evidence for the authoritative session store or any services called on cache miss.\n- Auth p99 may spike from 45ms to 200ms+, but no SLO/error-budget impact assessment or acceptable degradation window is provided.\n- Deployment is simultaneous across all auth-service instances, creating unnecessary risk of a fleet-wide auth latency or error spike.\n- Rollback plan is incomplete: reverting TTL does not restore expired cache entries or immediately recover hit ratio; recovery behavior and warm-up time are not described.\n- Alerting evidence is missing. \u201cWe have Datadog\u201d is not sufficient without specific dashboards, alerts, thresholds, and paging paths.\n- Owner/on-call is not provided, so there is no accountable responder during rollout or rollback.\n- No validation evidence is provided: no staging test, load test, production canary, synthetic auth test, or measured cache-miss/backing-store impact.\n- It is unclear whether the ConfigMap update is dynamically reloaded by Node.js auth-service or requires pod restart; propagation behavior is not documented.\n- The change affects all authenticated users and downstream services, but there is no downstream readiness confirmation for order-service, profile-service, or notification-service.\n- Redis impact is not analyzed: expected ops/sec, connection pressure, CPU, network, and eviction behavior under the new TTL are not shown.\n- The session semantics are not documented: reducing TTL to 300s could cause user-visible revalidation behavior, increased login/session refresh traffic, or unexpected session invalidation depending on implementation.\n- The stale session bug root cause is not described; it is unclear whether lowering TTL is the safest fix versus targeted invalidation or cache key/versioning.\n\nRecommended_actions:\n- Run a load test or production-like staging test with TTL=300s and demonstrate auth-service, Redis, and the backing session store can handle projected peak miss traffic with acceptable latency and error rates.\n- Replace simultaneous rollout with a staged rollout: canary a small percentage of auth-service instances/users, monitor, then progressively expand.\n- Define concrete success/abort criteria before rollout, including auth p95/p99 latency, auth error rate, Redis hit ratio, Redis CPU/memory/ops, backing-store QPS/latency/errors, and downstream error rates.\n- Add or confirm actionable Datadog alerts and dashboards for the above metrics, with paging to the responsible auth-service on-call.\n- Provide named owner and on-call coverage for the deployment window, including rollback authority and communication plan.\n- Clarify how the ConfigMap change is applied: whether auth-service hot-reloads config or requires pod restart, and how rollout completion is verified.\n- Improve rollback plan to include exact commands/process, expected recovery timeline, cache warm-up behavior, and mitigations if expired entries cannot be restored quickly.\n- Consider a safer intermediate TTL reduction, such as 3600s \u2192 1800s \u2192 900s \u2192 300s, if validation does not prove the final load is safe.\n- Confirm session behavior and user impact with product/security owners: whether 300s TTL affects session validity, reauthentication, token refresh, or login traffic.\n- Document why TTL reduction is the correct fix for JIRA-4821 and whether cache invalidation/versioning would address stale data with less reliability impact.\n\nFinal Decision: FIX-BEFORE-SHIP\n\nDecision Rationale: The change affects the core authentication path for all users and is expected to materially increase cache misses and latency, but lacks validation, staged rollout, alerting, owner/on-call, and a credible rollback plan. Production deployment should wait until capacity, observability, and operational controls are demonstrated.",
+  "usage": {
+    "prompt_tokens": 436,
+    "completion_tokens": 1179,
+    "total_tokens": 1615,
+    "cost": 0.03755,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.03755,
+      "upstream_inference_prompt_cost": 0.00218,
+      "upstream_inference_completions_cost": 0.03537
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 332,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.03755,
+  "latency_seconds": 25.78,
+  "status": "ok",
+  "api_response_id": "gen-1782164310-c40znbEizmkoQ31vXhav"
+}

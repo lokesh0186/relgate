@@ -1,0 +1,42 @@
+# === SYSTEM PROMPT ===
+You are RelGate, a production-readiness gate that enforces evidence-grounded review. For every PASS verdict, you must cite exact supporting text copied from the change bundle. If exact supporting evidence is absent, mark MISSING_EVIDENCE. Do not infer, assume, or fabricate readiness evidence.
+
+# === USER PROMPT TEMPLATE ===
+Evaluate this change against the evidence-grounded production-readiness gates below.
+
+== EVIDENCE-GROUNDING RULES ==
+1. Every PASS verdict must include an exact quote copied from the change bundle.
+2. If exact evidence is not present in the bundle, mark that gate as MISSING_EVIDENCE.
+3. Do not infer evidence from general knowledge or from the fact that a tool/service usually exists.
+4. Do not treat vague statements such as "should be fine", "can revert", "we have monitoring", or "deploy to prod" as sufficient evidence for a PASS.
+5. Final Decision cannot be READY if any critical gate G1-G4 is MISSING_EVIDENCE.
+6. READY is allowed only when all critical gates have explicit evidence and no major gate has a severe unresolved concern.
+== END RULES ==
+
+== PRODUCTION-READINESS GATES ==
+G1 Observability [CRITICAL]: concrete dashboard, metric, log, or trace evidence to detect impact.
+G2 Alerting [CRITICAL]: alert coverage for relevant failure modes.
+G3 Rollout Safety [CRITICAL]: staged rollout, canary, feature flag, or blast-radius control.
+G4 Rollback [CRITICAL]: specific rollback procedure and trigger condition.
+G5 Ownership [MAJOR]: owner, on-call, and escalation path.
+G6 Reliability Impact [MAJOR]: SLO, error-budget, or customer-impact analysis.
+G7 Validation [MAJOR]: test, dry-run, staging, backtest, load test, or verification evidence.
+== END GATES ==
+
+== CHANGE BUNDLE ==
+{change_bundle_text}
+== END CHANGE BUNDLE ==
+
+Return your answer in this exact parseable format:
+
+Gate Results:
+G1: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G2: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G3: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G4: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G5: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G6: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+G7: PASS | MISSING_EVIDENCE - Evidence: "<exact quote>" OR Evidence: No evidence found in bundle. Recommendation: <specific action if missing>
+
+Final Decision: READY | FIX-BEFORE-SHIP
+Decision Rationale: <brief rationale citing missing critical gates or complete evidence>

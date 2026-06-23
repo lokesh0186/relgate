@@ -1,0 +1,38 @@
+{
+  "case_id": "case_005",
+  "case_type": "routing_change",
+  "expected_decision": "FIX-BEFORE-SHIP",
+  "model": "x-ai/grok-4.3",
+  "mode": "m1_checklist",
+  "timestamp": "2026-06-22T21:44:43.895079+00:00",
+  "system_prompt": "You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.",
+  "user_prompt": "Evaluate this change against the production-readiness checklist below.\n\n== PRODUCTION-READINESS GATES ==\nG1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?\nG2 Alerting: Does the bundle include alert coverage for failure modes?\nG3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?\nG4 Rollback: Does the bundle include a specific rollback plan with trigger condition?\nG5 Ownership: Does the bundle identify owner, on-call, and escalation path?\nG6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?\nG7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?\n== END GATES ==\n\n== CHANGE BUNDLE ==\nChange Summary: Shift /api/v2/* traffic from legacy-api backend to new api-v2-service via nginx ingress annotation update\nDiff / Config: # k8s/ingress/api-gateway.yaml\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: api-gateway\n  annotations:\n    nginx.ingress.kubernetes.io/canary: \"true\"\n    nginx.ingress.kubernetes.io/canary-weight: \"10\"\nspec:\n  rules:\n  - host: api.company.com\n    http:\n      paths:\n      - path: /api/v2\n-       backend:\n-         service: legacy-api\n-         port: 8080\n+       backend:\n+         service: api-v2-service\n+         port: 8080\nService Context: api-gateway (nginx ingress controller), serves 10k RPM. /api/v2 handles ~3.2k RPM from mobile clients and 2 internal services.\nDeployment Plan: Canary rollout: 10% traffic for 30min, then 50% for 1h, then 100% if error rate stays below 0.1%.\nRollback Plan: [not provided]\nObservability Evidence: [not provided]\nAlerting Evidence: [not provided]\nOwner / On-Call: platform-team owns ingress. On-call: @platform-oncall in #platform-incidents\nSLO / Reliability Impact: [not provided]\nBlast Radius: All /api/v2 consumers: mobile app (iOS/Android), order-service, notification-service.\nValidation Evidence: api-v2-service passes full integration test suite. Load tested at 5k RPM with p99 < 80ms.\n== END CHANGE BUNDLE ==\n\nReturn your answer in this exact parseable format:\n\nGate Results:\nG1: PASS | FAIL - <brief explanation>\nG2: PASS | FAIL - <brief explanation>\nG3: PASS | FAIL - <brief explanation>\nG4: PASS | FAIL - <brief explanation>\nG5: PASS | FAIL - <brief explanation>\nG6: PASS | FAIL - <brief explanation>\nG7: PASS | FAIL - <brief explanation>\n\nRecommended_actions:\n- <specific action 1>\n- <specific action 2>\n\nFinal Decision: READY | FIX-BEFORE-SHIP\nDecision Rationale: <brief rationale>",
+  "response": "Gate Results:\nG1: FAIL - no dashboard/metric/log evidence provided\nG2: FAIL - no alert coverage or failure-mode definitions provided\nG3: PASS - canary annotations + staged 10%/50%/100% rollout plan present\nG4: FAIL - rollback plan explicitly marked [not provided]\nG5: PASS - owner (platform-team) + on-call (@platform-oncall) identified\nG6: FAIL - no SLO/error-budget/customer-impact statement provided\nG7: PASS - integration tests + 5k RPM load-test evidence present\n\nRecommended_actions:\n- Add concrete rollback plan with trigger (e.g., error rate >0.1% or p99>200 ms) and exact revert command\n- Supply or reference the observability dashboards, key metrics, and alerts that will be monitored during canary\n\nFinal Decision: FIX-BEFORE-SHIP\nDecision Rationale: Missing rollback, observability, alerting and SLO evidence are hard gates; canary mechanism alone is insufficient for production.",
+  "usage": {
+    "prompt_tokens": 810,
+    "completion_tokens": 619,
+    "total_tokens": 1429,
+    "cost": 0.0024256,
+    "is_byok": false,
+    "prompt_tokens_details": {
+      "cached_tokens": 128,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "cost_details": {
+      "upstream_inference_cost": 0.0024256,
+      "upstream_inference_prompt_cost": 0.0008781,
+      "upstream_inference_completions_cost": 0.0015475
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 413,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "estimated_or_reported_cost_usd": 0.002426,
+  "latency_seconds": 5.19,
+  "status": "ok",
+  "api_response_id": "gen-1782164679-6LTehAV4VhBb6x2YSy6M"
+}

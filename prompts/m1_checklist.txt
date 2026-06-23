@@ -1,0 +1,37 @@
+# === SYSTEM PROMPT ===
+You are a senior Site Reliability Engineer. Evaluate the following cloud/software change against a production-readiness checklist. You may use engineering judgment, but do not fabricate facts that are not in the change bundle.
+
+# === USER PROMPT TEMPLATE ===
+Evaluate this change against the production-readiness checklist below.
+
+== PRODUCTION-READINESS GATES ==
+G1 Observability: Does the bundle include concrete dashboard/metric/log evidence to detect impact?
+G2 Alerting: Does the bundle include alert coverage for failure modes?
+G3 Rollout Safety: Does the bundle include staged rollout, canary, feature flag, or blast-radius control?
+G4 Rollback: Does the bundle include a specific rollback plan with trigger condition?
+G5 Ownership: Does the bundle identify owner, on-call, and escalation path?
+G6 Reliability Impact: Does the bundle state SLO, error-budget, or customer-impact risk?
+G7 Validation: Does the bundle include test, dry-run, staging, backtest, or verification evidence?
+== END GATES ==
+
+== CHANGE BUNDLE ==
+{change_bundle_text}
+== END CHANGE BUNDLE ==
+
+Return your answer in this exact parseable format:
+
+Gate Results:
+G1: PASS | FAIL - <brief explanation>
+G2: PASS | FAIL - <brief explanation>
+G3: PASS | FAIL - <brief explanation>
+G4: PASS | FAIL - <brief explanation>
+G5: PASS | FAIL - <brief explanation>
+G6: PASS | FAIL - <brief explanation>
+G7: PASS | FAIL - <brief explanation>
+
+Recommended_actions:
+- <specific action 1>
+- <specific action 2>
+
+Final Decision: READY | FIX-BEFORE-SHIP
+Decision Rationale: <brief rationale>
