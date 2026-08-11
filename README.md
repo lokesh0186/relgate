@@ -17,9 +17,9 @@
 
 ## Overview
 
-Freeform LLM review may block adequately documented changes, while checklist review may mark gates satisfied without source support. RelGate addresses this with an **evidence-grounded gate framework** that requires each PASS to cite a bundle span or explicitly mark evidence missing.
+Freeform LLM review may block adequately documented changes, while checklist review may mark gates satisfied without source support. RelGate instead requires each PASS to cite a bundle span or explicitly mark evidence missing.
 
-For the camera-ready analysis, a citation is supported only when the complete quoted span occurs verbatim and contiguously in the supplied bundle after case normalization and whitespace collapsing. A quote may be shorter than its source sentence; paraphrases, semantic equivalents, fuzzy matches, and prefix/suffix-only matches are unsupported. Literal support does not establish semantic relevance or operational adequacy.
+For the camera-ready analysis, a citation is supported only when the complete quoted span occurs verbatim and contiguously in the supplied bundle after case normalization and whitespace collapsing. A quote may be shorter than its source sentence. Paraphrases, semantic equivalents, fuzzy matches, and prefix/suffix-only matches are unsupported. A literal match can still be irrelevant or insufficient; this metric does not assess either question.
 
 ### The Seven Readiness Gates
 
@@ -45,9 +45,9 @@ From **108 evaluation calls** across 3 models, 3 review modes, and 12 scenarios 
 
 2. **Checklist structure reduced false blocking but had more unsupported claims than RelGate.** M1 reached 0.972 accuracy; its mean per-response unsupported-claim fraction was 0.208 versus 0.056 for M2.
 
-3. **RelGate had the best observed decision behavior in this controlled pilot.** M2 produced zero observed false-ready and false-block decisions and 1.000 observed decision accuracy. These are feasibility results, not production accuracy or zero-risk estimates.
+3. **RelGate produced no observed false-ready or false-block decisions in this pilot.** M2 had 1.000 observed decision accuracy. These are feasibility results, not production accuracy or zero-risk estimates.
 
-**Main lesson**: Production-readiness review should be evaluated as an evidence-auditing task, not only as a pass/fail classification task.
+The experiment treats production-readiness review as evidence auditing as well as pass/fail classification.
 
 ---
 
