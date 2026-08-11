@@ -24,7 +24,7 @@
 | Preliminary Results, model/example paragraph | Used one balanced model sentence and a rhetorical `illustrating why` clause. | Split model results from the example and stated plainly that the decision was correct but its quoted support was not. | NO | NO | NO | YES |
 | Preliminary Results, uncertainty | Began with the abstract phrase `Uncertainty is substantial`. | Began with the concrete reason: the sample is small. Wilson intervals and zero-risk warning are unchanged. | NO | NO | NO | YES |
 | Discussion and Limitations, feasibility and validity | Used `production effectiveness`, `seven-gate ontology`, and `bound these findings`. | Used direct language about the synthetic pilot, shared gates, instruction compliance, realistic evidence, repeat runs, and model versions. | NO | NO | NO | YES |
-| Discussion and Limitations, deterministic checks and future study | Used `complementary evidence-to-decision problem` and a long future-work list. | Explained simple deterministic checks directly and separated the future design, four evaluation questions, and evidence-quality requirements. | NO | NO | NO | YES |
+| Discussion and Limitations, deterministic checks and future study | Used `complementary evidence-to-decision problem` and a long future-work list. | Explained simple deterministic checks directly and separated the future design, four evaluation aspects, and evidence-quality requirements. | NO | NO | NO | YES |
 | Acknowledgment | Disclosed Codex language and scoring/test-code assistance and independent author verification. | Unchanged byte-for-byte from the starting manuscript. | NO | NO | NO | YES |
 
 ## Repository prose
@@ -58,7 +58,7 @@ README edits were limited to four passages: the overview no longer says `address
 The following sentences or phrases were reviewed and intentionally kept:
 
 - `RelGate treats this as evidence auditing rather than open-ended advice.` **KEEP**: concise statement of the task distinction.
-- `Unsupported Evidence Claims is the mean ...` **KEEP**: exact metric definition; simplifying it further risks changing the denominator semantics.
+- `The Unsupported Evidence Claims metric is the mean ...` **KEEP**: exact metric definition; simplifying it further risks changing the denominator semantics.
 - `M0's lower unsupported-claim fraction coincided with blocking all READY controls.` **KEEP**: necessary explanation of the M0/M2 tradeoff visible in Table I.
 - `Its 1.000 decision accuracy may therefore reflect compliance ...` **KEEP**: `therefore` states the direct reason for the reviewer-requested benchmark-alignment caveat.
 - `A deterministic baseline remains future work.` **KEEP**: compact and explicitly requested by the reviewers.

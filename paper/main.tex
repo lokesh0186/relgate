@@ -39,7 +39,7 @@ software reliability, LLM-assisted review, evidence grounding, cloud changes
 \section{Motivation}
 
 Reliable release processes require explicit information about monitoring, rollout, rollback, ownership, and validation~\cite{beyer2016sre,gunawi2016bugs}.
-Our fully specified control included dashboard and alert links, a staged rollout, rollback triggers, ownership, SLO analysis, and test results. Even so, freeform reviews blocked it across all three models.
+One fully specified READY control included dashboard and alert links, a staged rollout, rollback triggers, ownership, SLO analysis, and test results. Even so, all three models blocked this control under freeform review.
 Checklist reviews also returned PASS judgments with no supporting text in the bundle. We distinguish this failure from the broader problem of LLM hallucination~\cite{huang2025hallucination}.
 RelGate treats this as evidence auditing rather than open-ended advice.
 
@@ -92,7 +92,7 @@ We created 12 scenarios around these gates: 9 with seeded gaps (e.g., absent ale
 We reviewed each scenario once under \textbf{M0 Freeform}, \textbf{M1 Checklist} (G1--G7), and \textbf{M2 RelGate} (gates plus grounding) using GPT-5.5, Grok~4.3, and Llama~4~Maverick via OpenRouter at temperature~0. The experiment comprised $12\times3\times3=108$ calls.
 
 We report Critical Gap Recall, False-Ready Rate (unsafe approvals, $n{=}27$/mode), False-Block Rate (READY controls blocked, $n{=}9$/mode), Decision Accuracy ($n{=}36$/mode), and Unsupported Evidence Claims.
-Unsupported Evidence Claims is the mean of 36 response-level unsupported/total-claim fractions, with a value of zero when a response makes no claim.
+The Unsupported Evidence Claims metric is the mean of 36 response-level unsupported/total-claim fractions, with a value of zero when a response makes no claim.
 Scoring was deterministic. Extracted quotes underwent the strict test above, and PASS on a seeded-missing gate also counted as unsupported.
 We used no human adjudication. The artifact reports model-level results and Wilson intervals.
 
@@ -124,7 +124,7 @@ Model versions and hosted implementations may change. Our results apply to the v
 Some gates can be checked partly with deterministic rules, such as whether an alert definition or rollback field is present.
 RelGate asks whether each passing gate is supported by evidence in a prose/configuration bundle. A deterministic baseline remains future work.
 A larger study should use real or anonymized change records, repeat each model condition, and include expert/developer review.
-It should measure four questions separately: decision correctness, quotation validity, semantic relevance, and actual evidence adequacy.
+It should evaluate four aspects separately: decision correctness, quotation validity, semantic relevance, and actual evidence adequacy.
 It should also test whether evidence is current, mutually consistent, and sufficient under the organization's own release policy rather than merely present.
 
 \textbf{Artifact:} \url{https://github.com/lokesh0186/relgate}

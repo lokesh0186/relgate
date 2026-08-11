@@ -29,13 +29,13 @@ Index Terms—software reliability, LLM-assisted review, evidence grounding, clo
 I. M OTIVATION
 Reliable release processes require explicit information about
 monitoring, rollout, rollback, ownership, and validation [1],
-[2]. Our fully specified control included dashboard and alert
-links, a staged rollout, rollback triggers, ownership, SLO
-analysis, and test results. Even so, freeform reviews blocked
-it across all three models. Checklist reviews also returned
-PASS judgments with no supporting text in the bundle. We
-distinguish this failure from the broader problem of LLM
-hallucination [3]. RelGate treats this as evidence auditing
+[2]. One fully specified READY control included dashboard
+and alert links, a staged rollout, rollback triggers, ownership,
+SLO analysis, and test results. Even so, all three models
+blocked this control under freeform review. Checklist reviews
+also returned PASS judgments with no supporting text in the
+bundle. We distinguish this failure from the broader problem of
+LLM hallucination [3]. RelGate treats this as evidence auditing
 rather than open-ended advice.
 RAG adds retrieved, non-parametric context to a prompt [4].
 Chain-of-Verification asks the model to check an earlier answer through verification questions [5]. Structured-generation
@@ -84,12 +84,9 @@ gaps (e.g., absent alerts or rollback) and 3 fully specified
 READY controls. We reviewed each scenario once under M0
 Freeform, M1 Checklist (G1–G7), and M2 RelGate (gates
 plus grounding) using GPT-5.5, Grok 4.3, and Llama 4 Maverick via OpenRouter at temperature 0. The experiment comprised 12 × 3 × 3 = 108 calls.
-We report Critical Gap Recall, False-Ready Rate (unsafe
-approvals, n=27/mode), False-Block Rate (READY controls
-blocked, n=9/mode), Decision Accuracy (n=36/mode), and
-Unsupported Evidence Claims. Unsupported Evidence Claims
-is the mean of 36 response-level unsupported/total-claim fractions, with a value of zero when a response makes no claim.
-Scoring was deterministic. Extracted quotes underwent the
+We report Critical Gap Recall, False-Ready Rate (unsafe approvals, n=27/mode), False-Block Rate (READY controls blocked, n=9/mode), Decision Accuracy (n=36/mode),
+and Unsupported Evidence Claims. The Unsupported Evidence Claims metric is the mean of 36 response-level
+unsupported/total-claim fractions, with a value of zero when
 
 TABLE I
 C ONTROLLED PILOT RESULTS ACROSS REVIEW MODES .
@@ -125,9 +122,10 @@ Decision Accuracy (n=36)
 0.056
 1.000
 
-strict test above, and PASS on a seeded-missing gate also
-counted as unsupported. We used no human adjudication. The
-artifact reports model-level results and Wilson intervals.
+a response makes no claim. Scoring was deterministic. Extracted quotes underwent the strict test above, and PASS on a
+seeded-missing gate also counted as unsupported. We used no
+human adjudication. The artifact reports model-level results
+and Wilson intervals.
 IV. P RELIMINARY R ESULTS
 M0 found nearly all critical gaps (0.975) but blocked
 every READY control, yielding 0.750 accuracy. M0’s
@@ -164,14 +162,14 @@ Some gates can be checked partly with deterministic rules,
 such as whether an alert definition or rollback field is present.
 RelGate asks whether each passing gate is supported by
 evidence in a prose/configuration bundle. A deterministic
-baseline remains future work. A larger study should use real
-or anonymized change records, repeat each model condition,
-and include expert/developer review. It should measure four
-questions separately: decision correctness, quotation validity,
-semantic relevance, and actual evidence adequacy. It should
-also test whether evidence is current, mutually consistent, and
-sufficient under the organization’s own release policy rather
-than merely present.
+baseline remains future work. A larger study should use real or
+anonymized change records, repeat each model condition, and
+include expert/developer review. It should evaluate four aspects
+separately: decision correctness, quotation validity, semantic
+relevance, and actual evidence adequacy. It should also test
+whether evidence is current, mutually consistent, and sufficient
+under the organization’s own release policy rather than merely
+present.
 Artifact: https://github.com/lokesh0186/relgate
 ACKNOWLEDGMENT
 OpenAI Codex was used during camera-ready preparation
