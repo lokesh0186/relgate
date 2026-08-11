@@ -18,6 +18,19 @@ CASES_DIR = ROOT / "benchmark" / "cases"
 RESULTS_DIR = ROOT / "results"
 GATES = [f"G{i}" for i in range(1, 8)]
 CRITICAL_GATES = {"G1", "G2", "G3", "G4"}
+VISIBLE_FIELDS = [
+    ("Change Summary", "change_summary"),
+    ("Diff / Config", "diff_or_config"),
+    ("Service Context", "service_context"),
+    ("Deployment Plan", "deployment_plan"),
+    ("Rollback Plan", "rollback_plan"),
+    ("Observability Evidence", "observability_evidence"),
+    ("Alerting Evidence", "alerting_evidence"),
+    ("Owner / On-Call", "owner_oncall_evidence"),
+    ("SLO / Reliability Impact", "slo_reliability_impact"),
+    ("Blast Radius", "blast_radius"),
+    ("Validation Evidence", "validation_evidence"),
+]
 
 KEY_CONCEPTS = {
     "G1": ["observability", "dashboard", "metric", "monitor", "log", "trace", "grafana", "cloudwatch", "datadog"],
@@ -45,11 +58,11 @@ def load_cases():
 
 
 def bundle_text(case: dict) -> str:
-    parts = []
-    for k, v in case.items():
-        if k != "ground_truth" and isinstance(v, str):
-            parts.append(v)
-    return "\n".join(parts)
+    """Reconstruct the exact visible bundle representation sent to the model."""
+    return "\n".join(
+        f"{label}: {case.get(key, '') or '[not provided]' }"
+        for label, key in VISIBLE_FIELDS
+    )
 
 
 def extract_decision(text: str) -> str:
@@ -118,7 +131,12 @@ def count_identified_gaps(text: str, seeded_gaps: list) -> tuple[int, int]:
 
 
 def exact_quote_support(text: str, case: dict) -> tuple[int, int]:
-    """Return (quoted_evidence_claims, unsupported_quotes)."""
+    """Return quoted claims and claims lacking strict literal bundle support.
+
+    A quote is supported only when the complete quote is a contiguous span of
+    the supplied bundle after case normalization and whitespace collapsing.
+    Prefix, suffix, fuzzy, paraphrase, and semantic-equivalence matches fail.
+    """
     quotes = [q.strip() for q in re.findall(r'"([^"\n]{8,})"', text)]
     btxt = re.sub(r"\s+", " ", bundle_text(case)).lower()
     total = 0
@@ -129,7 +147,7 @@ def exact_quote_support(text: str, case: dict) -> tuple[int, int]:
         if q_norm in {"ready", "fix-before-ship", "pass", "missing_evidence"}:
             continue
         total += 1
-        if q_norm not in btxt and q_norm[:40] not in btxt and q_norm[-40:] not in btxt:
+        if q_norm not in btxt:
             unsupported += 1
     return total, unsupported
 
@@ -179,9 +197,9 @@ def score_file(path: Path, cases: dict) -> dict | None:
     id_total, id_crit = count_identified_gaps(response, seeded)
     quote_total, quote_unsupported = exact_quote_support(response, case)
     unsupported_pass = unsupported_gate_passes(response, seeded)
-    halluc_claims = quote_unsupported + unsupported_pass
+    unsupported_claims = quote_unsupported + unsupported_pass
     evidence_claims = quote_total + unsupported_pass
-    halluc_rate = round(halluc_claims / evidence_claims, 3) if evidence_claims else 0.0
+    unsupported_rate = round(unsupported_claims / evidence_claims, 3) if evidence_claims else 0.0
 
     is_unsafe = expected == "FIX-BEFORE-SHIP"
     is_ready_control = expected == "READY"
@@ -208,8 +226,10 @@ def score_file(path: Path, cases: dict) -> dict | None:
         "false_ready": false_ready,
         "false_block": false_block,
         "evidence_claim_count": evidence_claims,
-        "unsupported_evidence_claim_count": halluc_claims,
-        "evidence_hallucination_rate": halluc_rate,
+        "unsupported_evidence_claim_count": unsupported_claims,
+        "unsupported_evidence_rate": unsupported_rate,
+        # Backward-compatible alias retained for accepted-artifact consumers.
+        "evidence_hallucination_rate": unsupported_rate,
         "actionability_score_mean": actionability_score(response),
         "decision_accuracy": decision_accuracy,
         "latency_seconds": raw.get("latency_seconds", 0),
@@ -244,7 +264,9 @@ def summarize(rows: list) -> list:
             "critical_gap_recall": avg([r["critical_gap_recall"] for r in unsafe]),
             "false_ready_rate": round(sum(r["false_ready"] for r in unsafe) / len(unsafe), 3) if unsafe else "NA",
             "false_block_rate": round(sum(r["false_block"] for r in ready) / len(ready), 3) if ready else "NA",
-            "evidence_hallucination_rate": avg([r["evidence_hallucination_rate"] for r in mr]),
+            "unsupported_evidence_rate": avg([r["unsupported_evidence_rate"] for r in mr]),
+            # Backward-compatible alias retained for accepted-artifact consumers.
+            "evidence_hallucination_rate": avg([r["unsupported_evidence_rate"] for r in mr]),
             "actionability_mean": avg([r["actionability_score_mean"] for r in mr]),
             "decision_accuracy": round(sum(r["decision_accuracy"] for r in mr) / len(mr), 3),
             "parse_success_rate": round(sum(r["parse_success"] for r in mr) / len(mr), 3),
@@ -279,13 +301,13 @@ def main():
     summary_path = RESULTS_DIR / f"{args.output_prefix}_summary_metrics.csv"
     fieldnames = list(rows[0].keys())
     with open(scored_path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w = csv.DictWriter(f, fieldnames=fieldnames, lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
 
     summary = summarize(rows)
     with open(summary_path, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(summary[0].keys()))
+        w = csv.DictWriter(f, fieldnames=list(summary[0].keys()), lineterminator="\n")
         w.writeheader()
         w.writerows(summary)
 

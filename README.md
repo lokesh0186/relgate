@@ -7,7 +7,7 @@
 [![Benchmark: 12 scenarios](https://img.shields.io/badge/Benchmark-12_scenarios-green.svg)](benchmark/cases/)
 [![Experiments: 108 calls](https://img.shields.io/badge/Experiments-108_calls-orange.svg)](results/raw_outputs/)
 
-**Paper**: Submitted to the [37th IEEE International Symposium on Software Reliability Engineering (ISSRE 2026)](https://cyprusconferences.org/issre2026/), Fast Abstracts / Project Highlights track. Conference: October 20-23, 2026, Limassol, Cyprus. Accepted papers appear in IEEE Xplore.
+**Paper status**: Accepted to the [ISSRE 2026](https://cyprusconferences.org/issre2026/) Fast Abstracts / Project Highlights track (Submission 357). The work is not yet published; no DOI has been assigned.
 
 **Author**: [Lokesh Chauhan](https://orcid.org/0009-0004-1544-6424), Independent Researcher
 
@@ -17,7 +17,9 @@
 
 ## Overview
 
-LLM-assisted production-readiness review can be poorly calibrated: free-form review may block safe changes, while checklist review may approve changes with fabricated evidence. RelGate addresses this with an **evidence-grounded gate framework** that requires every readiness decision to cite exact text from the change bundle or explicitly mark evidence as missing.
+Freeform LLM review may block adequately documented changes, while checklist review may mark gates satisfied without source support. RelGate addresses this with an **evidence-grounded gate framework** that requires each PASS to cite a bundle span or explicitly mark evidence missing.
+
+For the camera-ready analysis, a citation is supported only when the complete quoted span occurs verbatim and contiguously in the supplied bundle after case normalization and whitespace collapsing. A quote may be shorter than its source sentence; paraphrases, semantic equivalents, fuzzy matches, and prefix/suffix-only matches are unsupported. Literal support does not establish semantic relevance or operational adequacy.
 
 ### The Seven Readiness Gates
 
@@ -39,11 +41,11 @@ A change is **READY** only if all critical gates have cited evidence. Any critic
 
 From **108 evaluation calls** across 3 models, 3 review modes, and 12 scenarios (9 unsafe + 3 READY controls):
 
-1. **Free-form review is safe but over-conservative.** All models blocked every change including safe controls (false-block = 1.000), yielding only 0.750 decision accuracy.
+1. **Freeform review was over-conservative in this sample.** All models blocked every change, including the READY controls (false-block = 1.000), yielding 0.750 decision accuracy.
 
-2. **Checklist structure improves specificity but increases unsupported claims.** M1 reached 0.972 accuracy but produced 4x more unsupported evidence claims than evidence-grounded review (0.208 vs. 0.053).
+2. **Checklist structure reduced false blocking but had more unsupported claims than RelGate.** M1 reached 0.972 accuracy; its mean per-response unsupported-claim fraction was 0.208 versus 0.056 for M2.
 
-3. **Evidence grounding improves calibration.** M2 achieved 1.000 decision accuracy with zero false-ready, zero false-block, and the lowest unsupported-claim rate, by requiring models to cite real bundle text or honestly report missing evidence.
+3. **RelGate had the best observed decision behavior in this controlled pilot.** M2 produced zero observed false-ready and false-block decisions and 1.000 observed decision accuracy. These are feasibility results, not production accuracy or zero-risk estimates.
 
 **Main lesson**: Production-readiness review should be evaluated as an evidence-auditing task, not only as a pass/fail classification task.
 
@@ -58,7 +60,7 @@ From **108 evaluation calls** across 3 models, 3 review modes, and 12 scenarios 
 | Critical Gap Recall | 0.975 | 1.000 | **1.000** |
 | False-Ready Rate (n=27) | 0.000 | 0.000 | **0.000** |
 | False-Block Rate (n=9) | 1.000 | 0.111 | **0.000** |
-| Unsupported Evid. Claims | 0.062 | 0.208 | **0.053** |
+| Unsupported Evid. Claims | 0.035 | 0.208 | **0.056** |
 | Decision Accuracy (n=36) | 0.750 | 0.972 | **1.000** |
 | Actionability (0-2) | 1.58 | 1.74 | **1.74** |
 
@@ -67,6 +69,10 @@ Full scored results: [`results/full_relgate_scored_results.csv`](results/full_re
 Summary metrics: [`results/full_summary_metrics.csv`](results/full_summary_metrics.csv)
 
 Metric derivation: [`results/metric_sanity_report.md`](results/metric_sanity_report.md)
+
+Model-level metrics: [`results/camera_ready_model_level_metrics.csv`](results/camera_ready_model_level_metrics.csv)
+
+95% Wilson intervals: [`results/camera_ready_wilson_intervals.csv`](results/camera_ready_wilson_intervals.csv)
 
 ---
 
@@ -104,7 +110,7 @@ Each unsafe case has 2-6 seeded gaps with ground-truth severity labels (critical
 | Grok 4.3 | xAI | Commercial | [OpenRouter](https://openrouter.ai/) |
 | Llama 4 Maverick | Meta | Open-weight | [OpenRouter](https://openrouter.ai/) |
 
-All calls use temperature 0 for deterministic outputs. Total experiment cost: ~$1.30.
+Each case/model/mode tuple was called once at temperature 0. Repeated-run or stochastic robustness was not measured. Total experiment cost: ~$1.30.
 
 ---
 
@@ -113,13 +119,25 @@ All calls use temperature 0 for deterministic outputs. Total experiment cost: ~$
 ### Requirements
 
 - Python 3.10+
-- `OPENROUTER_API_KEY` environment variable
+- `OPENROUTER_API_KEY` only for new experiments; it is not needed for frozen-output reproduction
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Running Experiments
+### Reproducing the Camera-Ready Results (No API Calls)
+
+All 108 frozen raw outputs are included. These commands perform only local validation and scoring:
+
+```bash
+python3 scripts/preflight.py
+python3 -m unittest discover -s tests -v
+python3 scripts/camera_ready_audit.py
+python3 src/score_results.py --input-dir results/raw_outputs --output-prefix full
+python3 src/make_tables.py
+```
+
+### Running New Experiments (Not Part of Camera-Ready Reproduction)
 
 ```bash
 # Step 1: Validate setup (no API calls)
@@ -140,15 +158,6 @@ python3 src/score_results.py --input-dir results/raw_outputs --output-prefix ful
 # Step 6: Generate paper table and figure
 python3 src/make_tables.py
 python3 src/make_figures.py
-```
-
-### Using Pre-Computed Results
-
-All 108 raw outputs are included. To verify scoring without re-running API calls:
-
-```bash
-python3 src/score_results.py --input-dir results/raw_outputs --output-prefix full
-python3 src/make_tables.py
 ```
 
 Output: [`results/full_summary_metrics.csv`](results/full_summary_metrics.csv)
@@ -217,11 +226,12 @@ relgate/
 
 ## Limitations
 
-- Small pilot: 12 synthetic scenarios, not production change records
-- READY controls are fully specified; real evidence is often ambiguous or stale
-- Evidence presence does not guarantee production safety; it only enables auditability
-- Model versions evolve; results may not generalize to future releases
-- No developer trust, latency, or deployment integration measurement yet
+- Small, gate-aligned synthetic pilot; it may favor instruction compliance and does not establish production calibration.
+- READY controls are fully specified; real evidence may be ambiguous, stale, conflicting, incomplete, or organization-specific.
+- One temperature-0 observation per case/model/mode; repeated-run robustness is unknown.
+- Literal quotation validity is not semantic relevance or operational adequacy.
+- Deterministic checks can cover some literal readiness conditions; a deterministic baseline is future work.
+- Larger real/anonymized records and expert/developer evaluation are needed.
 
 ---
 

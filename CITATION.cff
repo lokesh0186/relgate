@@ -17,7 +17,7 @@ keywords:
   - evidence-grounding
   - cloud-change-review
   - software-reliability-engineering
-  - LLM-calibration
+  - LLM-assisted-review
 preferred-citation:
   type: conference-paper
   title: "RelGate: Evidence-Grounded Readiness Gates for LLM-Reviewed Cloud Changes"
@@ -35,4 +35,4 @@ preferred-citation:
   collection-title: "ISSRE 2026 Supplemental Proceedings"
   publisher:
     name: "IEEE"
-  notes: "Submitted to Fast Abstracts / Project Highlights track."
+  notes: "Accepted to the ISSRE 2026 Fast Abstracts / Project Highlights track; not yet published and no DOI assigned."

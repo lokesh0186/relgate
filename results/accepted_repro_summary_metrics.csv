@@ -1,0 +1,4 @@
+mode,n,unsafe_n,ready_control_n,gap_recall,critical_gap_recall,false_ready_rate,false_block_rate,evidence_hallucination_rate,actionability_mean,decision_accuracy,parse_success_rate,cost_usd_total
+m0_freeform,36,27,9,0.968,0.975,0.0,1.0,0.062,1.58,0.75,1.0,0.582
+m1_checklist,36,27,9,1.0,1.0,0.0,0.111,0.208,1.738,0.972,1.0,0.327
+m2_evidence_grounded,36,27,9,1.0,1.0,0.0,0.0,0.053,1.739,1.0,1.0,0.3845

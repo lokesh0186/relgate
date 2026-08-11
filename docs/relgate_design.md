@@ -10,8 +10,8 @@ A change bundle is a JSON document representing a cloud/software change submitte
 
 | Field | Description |
 |-------|-------------|
-| `change_id` | Unique identifier |
-| `change_type` | Category (e.g., `database_migration`, `k8s_deployment`, `terraform_infra`, `cache_config`) |
+| `case_id` | Unique scenario identifier |
+| `case_type` | Scenario category (e.g., `database_migration`, `k8s_hpa_scaling`) |
 | `change_summary` | 1–3 sentence description of what the change does |
 | `diff_or_config` | The actual diff, config snippet, or manifest change |
 | `service_context` | What service/system this affects, dependencies, traffic |
@@ -84,7 +84,7 @@ A change bundle is a JSON document representing a cloud/software change submitte
 | Tier | Gates | Behavior |
 |------|-------|----------|
 | **Critical** (must pass for READY) | G1, G2, G3, G4 | Any failure → FIX-BEFORE-SHIP |
-| **Major** (should pass) | G5, G6, G7 | Missing → FIX-BEFORE-SHIP |
+| **Major** | G5, G6, G7 | Raise warnings; READY requires no severe unresolved concern |
 
 > **Note:** Organizations may configure criticality differently. This is the default for our pilot.
 
@@ -93,12 +93,10 @@ A change bundle is a JSON document representing a cloud/software change submitte
 ## Decision Logic
 
 ```
-if all critical gates PASS and all major gates PASS:
+if all critical gates PASS and no major gate has a severe unresolved concern:
   decision = READY
 elif any critical gate has MISSING_EVIDENCE:
   decision = FIX-BEFORE-SHIP
-elif any gate is AMBIGUOUS:
-  decision = UNKNOWN (requires human review)
 else:
   decision = FIX-BEFORE-SHIP
 ```
@@ -107,7 +105,7 @@ else:
 
 ## Evidence-Grounding Rule
 
-Every PASS claim must cite the exact text/span from the change bundle that supports it.
+Every PASS claim must cite a verbatim contiguous span from the supplied change bundle. The scorer collapses whitespace and normalizes case, then requires the complete quoted span to occur in the reconstructed bundle. A quote may be shorter than the surrounding source sentence. Paraphrases, semantic equivalents, fuzzy matches, and prefix/suffix-only matches are unsupported.
 
 **PASS format:**
 
@@ -126,7 +124,7 @@ Evidence: No observability evidence found in the bundle.
 Recommendation: Add dashboard/metric references before deployment.
 ```
 
-**Core constraint:** The model must NOT infer, assume, or fabricate evidence.
+**Core constraint:** The model must NOT infer, assume, or fabricate evidence. If a supporting span is absent, the verdict must be `MISSING_EVIDENCE`. Literal support is distinct from semantic relevance and operational adequacy, which this pilot does not score.
 
 ---
 

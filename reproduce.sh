@@ -4,10 +4,14 @@ set -euo pipefail
 printf "=== RelGate local preflight ===\n"
 python3 scripts/preflight.py
 
-printf "\n=== Smoke estimate only; no API calls ===\n"
-python3 src/run_experiment.py --profile smoke --estimate-only
+printf "\n=== Strict-scoring regression tests ===\n"
+python3 -m unittest discover -s tests -v
 
-printf "\nTo run the smoke test, set OPENROUTER_API_KEY and run:\n"
-printf "  python3 src/run_experiment.py --profile smoke\n"
-printf "  python3 src/score_results.py --input-dir results/raw_outputs_smoke --output-prefix smoke\n"
-printf "\nDo not run the full 108-call experiment until smoke outputs have been reviewed.\n"
+printf "\n=== Camera-ready frozen-output audit ===\n"
+python3 scripts/camera_ready_audit.py
+
+printf "\n=== Regenerate final metrics and table from frozen outputs ===\n"
+python3 src/score_results.py --input-dir results/raw_outputs --output-prefix full
+python3 src/make_tables.py
+
+printf "\nReproduction PASS. No model or API calls were made.\n"

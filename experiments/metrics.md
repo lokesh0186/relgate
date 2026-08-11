@@ -1,101 +1,48 @@
-# Metrics Definition
+# Camera-Ready Metric Definitions
 
-## Primary Metrics
+These definitions describe the deterministic implementation in `src/score_results.py` used for the final camera-ready results.
 
-### 1. Gap Recall
-Of the seeded readiness gaps, what fraction did the model identify?
+## Decision Metrics
 
-Formula: identified_seeded_gaps / total_seeded_gaps
+- **Decision accuracy:** fraction of final `READY` / `FIX-BEFORE-SHIP` decisions equal to scenario ground truth. Denominator: 36 outputs per mode.
+- **False-ready rate:** unsafe scenarios incorrectly decided `READY`. Denominator: 27 unsafe observations per mode (9 cases x 3 models).
+- **False-block rate:** READY controls incorrectly decided `FIX-BEFORE-SHIP`. Denominator: 9 READY observations per mode (3 cases x 3 models).
+- **Parse success:** fraction of outputs from which one of the two final decisions was extracted.
 
-Scoring: A gap is 'identified' if the model explicitly mentions the absence or deficiency corresponding to that gap. Partial matches (mentioning the topic but not the gap) count as 0.5.
+## Gap Metrics
 
-### 2. Critical Gap Recall  
-Of critical seeded gaps (severity=critical), what fraction did the model identify?
+A seeded gap is identified when deterministic keyword and local absence-marker rules in `gap_identified()` detect the missing or deficient gate concept. There is no half credit.
 
-Formula: identified_critical_gaps / total_critical_gaps
+- **Gap recall:** response-level identified seeded gaps / seeded gaps, macro-averaged over unsafe outputs.
+- **Critical gap recall:** response-level identified critical seeded gaps / critical seeded gaps, macro-averaged over unsafe outputs.
 
-This is the most important recall metric. Missing a critical gap means the system could approve a dangerous change.
+## Unsupported Evidence Claims
 
-### 3. False-Ready Rate
-How often did the model say READY when at least one critical gate lacked evidence?
+A response's evidence claims are:
 
-Formula: false_READY_decisions / cases_with_critical_missing_evidence
+1. quoted spans of at least eight characters, excluding quoted output labels; plus
+2. each PASS parsed for a gate that ground truth marks as seeded-missing.
 
-Since all 12 cases have at least one critical gap, the denominator is 12 per model-mode combination.
+A quote is supported only when its complete normalized text is a contiguous substring of the exact visible change bundle. Normalization consists only of Unicode-independent case folding and whitespace collapsing. A quote may be shorter than its source sentence. Paraphrase, semantic equivalence, fuzzy matching, and prefix/suffix-only matching are unsupported.
 
-Ideal: 0.0 (never says READY when critical evidence is missing)
+A PASS on a seeded-missing gate contributes one evidence claim and one unsupported claim, even if the response also includes a quote. This preserves the accepted metric's treatment of an unsupported positive gate judgment.
 
-### 4. Evidence Hallucination Rate
-How often did the model claim evidence exists (cite something) when that evidence is NOT in the bundle?
+Per-response unsupported rate is `unsupported claims / evidence claims`, or zero when no claims were extracted. The paper reports the macro mean across 36 responses per mode. Claim-pooled counts and Wilson intervals are also supplied in `results/camera_ready_wilson_intervals.csv`.
 
-Formula: unsupported_evidence_claims / total_evidence_claims
+The criterion is deterministic; no human rating or inter-rater adjudication was used. It evaluates literal quotation validity, not semantic relevance or operational adequacy.
 
-Scoring: An 'evidence claim' is any statement that cites or references specific text from the bundle as proof. 'Unsupported' means the cited text does not exist in the bundle or is materially different.
+## Actionability
 
-For M0 (freeform), count any confidence statement about readiness as an implicit evidence claim if it asserts something is covered.
+`actionability_score()` is an automated 0--2 lexical specificity heuristic over recommendation-like response chunks. It remains in the artifact for continuity with the accepted experiment but is omitted from the camera-ready paper table for space and focus. It is not a human rating.
 
-### 5. Actionability Score
-Score each recommendation/finding on 0/1/2:
-- 0 = vague or not useful ('consider monitoring')
-- 1 = partially actionable ('add rollback plan')
-- 2 = specific fix-before-ship action tied to missing evidence ('Add rollback trigger: if error_rate > 2% for 3min, revert via kubectl rollback')
+## Output Schema
 
-Per-case actionability = mean of recommendation scores
-Overall actionability = mean across all cases
+The scored CSV includes identifiers, ground truth, parsed decision, gap counts/recall, false-ready/false-block indicators, evidence-claim counts, `unsupported_evidence_rate`, the backward-compatible `evidence_hallucination_rate` alias, actionability, decision accuracy, usage, cost, and raw filename.
 
-### 6. Decision Accuracy
-Whether the final READY/FIX-BEFORE-SHIP matches ground truth.
+## Validity Limits
 
-Formula: correct_decisions / total_decisions
-
-Ground truth: all 12 cases should be FIX-BEFORE-SHIP (by design, all have critical gaps).
-
-## Secondary Metrics
-
-- **Verbosity**: total tokens in response
-- **Latency**: seconds from request to response completion
-- **Cost**: USD per call (from OpenRouter usage data)
-- **Gate Consistency**: for M1/M2, whether individual gate verdicts are internally consistent with the final decision
-- **Unsupported Assumptions**: count of claims not grounded in bundle text (broader than hallucination)
-
-## Scoring Procedure
-
-1. **Automated scoring** (score_results.py):
-   - Parse M1/M2 structured outputs for gate verdicts
-   - Check decision accuracy against ground truth
-   - Count evidence claims and verify against bundle text
-   - Compute token counts and latency from API response
-
-2. **Semi-automated scoring** (requires human review):
-   - Actionability scores (apply rubric)
-   - M0 freeform gap identification (map free text to seeded gaps)
-   - Evidence hallucination verification for edge cases
-
-3. **All scoring decisions saved in CSV** with justification notes
-
-## Output CSV Schema
-
-Columns:
-```
-case_id, case_type, model, mode, seeded_gap_count, critical_gap_count, identified_gap_count, identified_critical_gap_count, gap_recall, critical_gap_recall, false_ready, evidence_claim_count, unsupported_evidence_claim_count, evidence_hallucination_rate, actionability_score_mean, decision_accuracy, latency_seconds, tokens_in, tokens_out, cost_usd, notes
-```
-
-## Aggregation
-
-Results table in paper aggregates by mode (across all models and cases):
-
-| Mode | Gap Recall | Crit. Gap Recall | False-Ready | Evid. Halluc. | Action. | Decision Acc. |
-|------|-----------|-----------------|-------------|--------------|---------|---------------|
-| M0   |           |                 |             |              |         |               |
-| M1   |           |                 |             |              |         |               |
-| M2   |           |                 |             |              |         |               |
-
-Secondary breakdown by model shown if space permits or discussed in text.
-
-## Threats to Metric Validity
-
-- Gap identification from freeform text requires interpretation (mitigated by rubric)
-- Seeded gaps have binary ground truth but real readiness is nuanced
-- Hallucination detection requires careful bundle-text matching
-- Actionability scoring involves subjective judgment (mitigated by 0/1/2 rubric)
-- All 12 cases designed to be FIX-BEFORE-SHIP limits evaluation of true-positive READY decisions
+- The scenarios and M2 prompt share the seven-gate ontology.
+- The quote test does not judge relevance or adequacy.
+- Gap identification and actionability are deterministic lexical heuristics.
+- Per-response macro means weight responses equally, including responses with no extracted evidence claims.
+- The pilot has one temperature-0 observation per case/model/mode.

@@ -1,0 +1,85 @@
+Final Git Diff Summary
+======================
+
+Branch and HEAD
+---------------
+camera-ready/issre2026-357
+0009fc374eb47644c24f199b42e0b4560f838a93
+
+Initial pre-existing dirty state
+--------------------------------
+ M paper/main.pdf
+ M paper/main.tex
+?? paper/ISSRE_2027_paper_357_submitted.pdf
+
+These pre-existing files were preserved and then camera-ready manuscript/PDF changes were made on the new branch. The submitted PDF remains untracked and unchanged.
+
+Final worktree status
+---------------------
+M CITATION.cff
+ M README.md
+ M docs/relgate_design.md
+ M experiments/experiment_plan.md
+ M experiments/metrics.md
+ M paper/main.pdf
+ M paper/main.tex
+ M paper/references.bib
+ M paper/tables/results_table.tex
+ M reproduce.sh
+ M results/full_relgate_scored_results.csv
+ M results/full_summary_metrics.csv
+ M results/metric_sanity_report.md
+ M src/make_tables.py
+ M src/score_results.py
+?? camera_ready/
+?? paper/ISSRE_2027_paper_357_submitted.pdf
+?? results/accepted_repro_relgate_scored_results.csv
+?? results/accepted_repro_summary_metrics.csv
+?? results/camera_ready_model_level_metrics.csv
+?? results/camera_ready_strict_scored_results.csv
+?? results/camera_ready_strict_summary_metrics.csv
+?? results/camera_ready_wilson_intervals.csv
+?? scripts/camera_ready_audit.py
+?? tests/
+
+The untracked camera_ready/ directory includes this summary file and all required audit deliverables.
+
+Tracked diff statistics
+-----------------------
+CITATION.cff                            |   4 +-
+ README.md                               |  56 ++++----
+ docs/relgate_design.md                  |  14 +-
+ experiments/experiment_plan.md          | 104 ++++-----------
+ experiments/metrics.md                  | 111 +++++-----------
+ paper/main.pdf                          | Bin 105433 -> 120082 bytes
+ paper/main.tex                          | 176 ++++++++++----------------
+ paper/references.bib                    |  92 ++++++++++----
+ paper/tables/results_table.tex          |  17 ++-
+ reproduce.sh                            |  16 ++-
+ results/full_relgate_scored_results.csv | 218 ++++++++++++++++----------------
+ results/full_summary_metrics.csv        |   8 +-
+ results/metric_sanity_report.md         |  89 +++++--------
+ src/make_tables.py                      |  56 ++++----
+ src/score_results.py                    |  50 ++++++--
+ 15 files changed, 473 insertions(+), 538 deletions(-)
+2	2	CITATION.cff
+33	23	README.md
+6	8	docs/relgate_design.md
+27	77	experiments/experiment_plan.md
+29	82	experiments/metrics.md
+-	-	paper/main.pdf
+70	106	paper/main.tex
+68	24	paper/references.bib
+10	7	paper/tables/results_table.tex
+10	6	reproduce.sh
+109	109	results/full_relgate_scored_results.csv
+4	4	results/full_summary_metrics.csv
+35	54	results/metric_sanity_report.md
+34	22	src/make_tables.py
+36	14	src/score_results.py
+
+Notes
+-----
+- Git diff statistics exclude untracked audit scripts, tests, camera-ready reports, historical accepted-reproduction snapshots, and model/Wilson CSVs listed above.
+- No commit, push, tag, or release was created.
+- git diff --check passes.

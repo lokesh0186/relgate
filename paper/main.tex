@@ -1,10 +1,7 @@
 \documentclass[conference]{IEEEtran}
 \usepackage{cite,graphicx,booktabs,url}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric}
-\definecolor{bundleblue}{RGB}{52,101,164}
-\definecolor{gateamber}{RGB}{196,160,0}
-\definecolor{decisiongreen}{RGB}{78,154,6}
+\usetikzlibrary{arrows.meta,positioning}
 
 \begin{document}
 
@@ -17,145 +14,116 @@ lokesh0186@gmail.com}}
 
 \maketitle
 
-\renewcommand{\thefootnote}{\fnsymbol{footnote}}
-\footnotetext[1]{This work was conducted independently and does not relate to the author's employment. No employer resources, data, or confidential information were used.}
-\renewcommand{\thefootnote}{\arabic{footnote}}
+\begingroup
+\renewcommand{\thefootnote}{}
+\footnotetext{This work was conducted independently and does not relate to the author's employment. No employer resources, data, or confidential information were used.}
+\endgroup
 
 \begin{abstract}
-Pre-deployment review of cloud changes is a reliability activity: reviewers must decide whether a change has enough evidence for observability, alerting, rollout safety, rollback, ownership, reliability impact, and validation.
-Large language models can assist this review, but free-form answers may be poorly calibrated.
-They can either approve unsupported changes or block changes that already contain sufficient readiness evidence.
-We present RelGate, a project prototype and experimental framework that requires LLM-generated readiness decisions to cite exact evidence from the change bundle or mark the evidence as missing.
-In a 12-scenario pilot across three models and three review modes (108 calls), all modes avoided false-ready approvals on unsafe changes, but free-form review blocked all READY controls.
-RelGate achieved the best calibration in this pilot, with zero observed false-ready decisions, zero observed false-blocks, and fewer unsupported evidence claims than checklist-only review (0.053 vs.\ 0.208).
-These early results suggest that evidence-grounded review may improve the auditability and release precision of LLM-assisted production-readiness gates.
+Pre-deployment cloud-change review asks whether observability, alerting, rollout, rollback, ownership, service-impact, and validation evidence is sufficient.
+LLMs may support this reliability task, but unstructured answers can block adequately documented changes or assert unsupported readiness.
+RelGate audits a fixed change bundle through seven configurable gates: each PASS must cite a verbatim bundle span; absent support is MISSING\_EVIDENCE.
+We evaluate 12 synthetic scenarios (9 unsafe and 3 READY controls), three models, and three modes---freeform, checklist, and RelGate---using one temperature-0 call per case/model/mode (108 calls).
+Under strict rescoring of the frozen outputs, all modes produced zero observed false-ready decisions on 27 unsafe observations per mode.
+Freeform blocked 9/9 READY controls, checklist blocked 1/9, and RelGate blocked 0/9.
+RelGate's mean per-response unsupported-claim fraction was 0.056 versus 0.208 for checklist-only review, and its observed decision accuracy was 1.000.
+These controlled results suggest evidence-grounded review can improve auditability and decision behavior under the evaluated conditions; they demonstrate feasibility, not production-readiness accuracy, and require larger, realistic studies.
 \end{abstract}
+
+\begin{IEEEkeywords}
+software reliability, LLM-assisted review, evidence grounding, cloud changes
+\end{IEEEkeywords}
 
 \section{Motivation}
 
-Cloud services deploy many changes daily, each requiring production-readiness evidence for safe release~\cite{beyer2016sre}.
-Consider a scenario in which a change bundle includes explicit dashboard links, alert rules, a staged rollout plan, a rollback trigger, on-call ownership, SLO-impact analysis, and validation test results.
-In our pilot, free-form LLM review returned FIX-BEFORE-SHIP for such a fully-specified change across all three tested models, typically requesting generic additional assurance despite all evidence being present.
-Conversely, giving the same models a structured checklist produced correct READY decisions in most cases, but sometimes marked gates as satisfied without citing supporting text from the bundle.
+Reliable release processes require explicit monitoring, rollout, rollback, ownership, and validation information~\cite{beyer2016sre,gunawi2016bugs}.
+Our fully specified control included dashboard and alert links, a staged rollout, rollback triggers, ownership, SLO analysis, and test results; freeform reviews nevertheless blocked it across all three models.
+Checklist reviews sometimes marked a gate satisfied without literal support, a source-traceability concern distinct from broader LLM hallucination taxonomies~\cite{huang2025hallucination}.
+RelGate treats this as evidence auditing rather than open-ended advice.
 
-The pilot exposes a calibration problem: free-form review can be safe but over-conservative, while checklist review can improve decisions yet encourage unsupported completion.
-More broadly, unsupported readiness claims create a false sense of auditability, where the gate says ``pass'' but the supporting evidence is fabricated or paraphrased rather than cited~\cite{huang2023hallucination}.
-As LLM-assisted review enters production workflows~\cite{yan2025empirical}, this calibration gap becomes a reliability concern.
-RelGate addresses it by requiring exact evidence citations for every passing gate, treating readiness review as an auditable evidence-checking problem rather than a free-form advisory task.
+RelGate is complementary to retrieval-augmented generation, which retrieves non-parametric context~\cite{lewis2020rag}, and Chain-of-Verification, which self-checks an earlier answer through verification questions~\cite{dhuliawala2024cove}.
+Structured-generation methods constrain response form~\cite{tam2024format}; RelGate instead audits one fixed bundle and requires each positive readiness judgment to be traceable to that bundle.
 
 \section{RelGate Design}
 
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-  node distance=0.45cm and 0.18cm,
-  box/.style={draw, rounded corners=3pt, minimum height=0.65cm, minimum width=1.35cm, font=\scriptsize\bfseries, align=center, text=white},
-  gate/.style={draw, rounded corners=2pt, minimum height=0.5cm, minimum width=1.7cm, font=\scriptsize, fill=gateamber!20, draw=gateamber!80!black, align=center},
-  decision/.style={draw, rounded corners=3pt, minimum height=0.65cm, minimum width=1.2cm, font=\scriptsize\bfseries, align=center, fill=decisiongreen!80, text=white},
-  arr/.style={-{Stealth[length=2.5mm]}, thick, color=black!70},
+  node distance=0.5cm,
+  box/.style={draw, rounded corners=3pt, minimum height=0.55cm, minimum width=1.5cm, font=\scriptsize\bfseries, align=center, fill=blue!15},
+  arr/.style={-{Stealth[length=2.5mm]}, thick},
 ]
-\node[box, fill=bundleblue] (bundle) {Change\\Bundle};
-\node[box, fill=bundleblue!70, right=of bundle] (mode) {Review\\Mode};
-\node[box, fill=bundleblue!50, right=of mode] (llm) {LLM\\Review};
-\node[box, fill=gateamber!85!black, right=of llm] (gates) {Gate Evid.\\Check};
-\node[decision, right=of gates] (dec) {Decision};
-
+% Top row
+\node[box] (bundle) {Change Bundle};
+\node[box, right=0.4cm of bundle] (mode) {Review Mode};
+\node[box, right=0.4cm of mode] (llm) {LLM Review};
 \draw[arr] (bundle) -- (mode);
 \draw[arr] (mode) -- (llm);
-\draw[arr] (llm) -- (gates);
+
+% Second row
+\node[box, below=0.5cm of mode, fill=orange!15] (gates) {Gate Evidence Check};
+\node[font=\scriptsize, below=0.15cm of gates] (glabel) {G1-G4 critical; G5-G7 major};
+\draw[arr] (llm) |- (gates);
+
+% Third row
+\node[box, below=0.8cm of gates, fill=green!15] (dec) {Decision: READY \textbar{} FIX-BEFORE-SHIP};
 \draw[arr] (gates) -- (dec);
-
-\node[gate, below=0.35cm of gates] (glist) {G1-G4 Critical~~|~~G5-G7 Major};
-
-\draw[-{Stealth[length=2mm]}, color=gateamber!80!black] (gates) -- (glist);
-
-\node[font=\scriptsize, below=0.2cm of dec] (out) {\textbf{READY} | \textbf{FIX-BEFORE-SHIP}};
 \end{tikzpicture}
-\caption{RelGate workflow. The model evaluates a change bundle against seven readiness gates and must cite exact evidence for each passing gate; missing evidence produces a FIX-BEFORE-SHIP decision.}
+\caption{RelGate workflow. The model must cite exact evidence for each passing gate; missing critical-gate evidence produces FIX-BEFORE-SHIP, while missing major-gate evidence raises a warning.}
 \label{fig:arch}
 \end{figure}
 
-RelGate evaluates cloud changes against seven production-readiness gates: \textbf{G1}~Observability (dashboard/metric/log evidence), \textbf{G2}~Alerting (failure-mode coverage), \textbf{G3}~Rollout Safety (staged deployment or blast-radius control), \textbf{G4}~Rollback (revert plan with trigger), \textbf{G5}~Ownership (on-call and escalation), \textbf{G6}~Reliability Impact (SLO or error-budget analysis), and \textbf{G7}~Validation (test/staging evidence).
-Gates G1-G4 are critical: if any critical gate lacks cited evidence, the decision must be FIX-BEFORE-SHIP.
-Gates G5-G7 are major: missing evidence triggers a warning but does not block.
+The gates span detection (\textbf{G1} Observability, \textbf{G2} Alerting), containment/recovery (\textbf{G3} Rollout Safety, \textbf{G4} Rollback), accountability (\textbf{G5} Ownership), service-level consequence (\textbf{G6} Reliability Impact), and pre-release evidence (\textbf{G7} Validation).
+G1--G4 are blocking; missing evidence in G5--G7 raises a warning but does not by itself prevent READY.
+This is a pilot operationalization, not a universal taxonomy: organizations may change gate membership or criticality while retaining evidence grounding.
 
-The \emph{evidence-grounding rule} requires the model to cite exact text from the change bundle for each PASS verdict. If no supporting text exists, the model must report MISSING\_EVIDENCE and recommend a specific remediation. The model must not infer or fabricate evidence. This changes the review task from checklist completion to evidence auditing.
+In this pilot, a PASS citation had to be a verbatim contiguous span from the supplied bundle after only case and whitespace normalization.
+The span could be shorter than its source sentence, but paraphrases, semantic equivalents, and prefix/suffix matches were unsupported; absent evidence required MISSING\_EVIDENCE.
+Literal support does not establish relevance or operational adequacy, which remain separate evaluation dimensions.
 
 \section{Pilot Study}
 
-We constructed 12 change scenarios: 9 with seeded reliability gaps (missing alerts, absent rollback plans, vague ownership) and 3 READY controls with complete evidence for all seven gates.
-Each scenario was evaluated under three prompting modes:
-\textbf{M0 Freeform} (unstructured review request),
-\textbf{M1 Checklist} (G1-G7 listed; pass/fail per gate),
-and \textbf{M2 Evidence-Grounded} (G1-G7 plus the evidence-grounding rule).
-Three models were used via OpenRouter at temperature~0: GPT-5.5, Grok~4.3, and Llama~4~Maverick.
-This yields 12 x 3 x 3 = 108 evaluation calls.
-The artifact contains the scenario schema, prompts, raw outputs, scoring script, and summary metrics.
+We constructed 12 gate-aligned scenarios: 9 with seeded gaps (e.g., absent alerts or rollback) and 3 fully specified READY controls.
+Each was reviewed once under \textbf{M0 Freeform}, \textbf{M1 Checklist} (G1--G7), and \textbf{M2 RelGate} (gates plus grounding) by GPT-5.5, Grok~4.3, and Llama~4~Maverick via OpenRouter at temperature~0: $12\times3\times3=108$ calls.
 
-\textbf{Metrics.}
-We report Critical Gap Recall (fraction of seeded critical gaps identified), False-Ready Rate (unsafe changes approved, $n{=}27$ per mode), False-Block Rate (safe controls blocked, $n{=}9$ per mode), Unsupported Evidence Claims (the fraction of explicit readiness-evidence claims not directly supported by the scenario text), Decision Accuracy ($n{=}36$ per mode), and Actionability (0-2 specificity scale).
+We report Critical Gap Recall, False-Ready Rate (unsafe approvals, $n{=}27$/mode), False-Block Rate (READY controls blocked, $n{=}9$/mode), Decision Accuracy ($n{=}36$/mode), and Unsupported Evidence Claims.
+The latter is the mean of 36 response-level unsupported/total-claim fractions (zero if no claim).
+Scoring was deterministic: extracted quotes underwent the strict test above, and PASS on a seeded-missing gate also counted as unsupported.
+No human adjudication was used; model-level results and Wilson intervals are in the artifact.
 
 \section{Preliminary Results}
 
-\begin{table}[t]
-\centering
-\caption{Pilot results across review modes (averaged over 3 models, 12 cases each).}
-\label{tab:results}
-\footnotesize
-\begin{tabular}{@{}lccc@{}}
-\toprule
-\textbf{Metric} & \textbf{M0} & \textbf{M1} & \textbf{M2} \\
-\midrule
-Critical Gap Recall & 0.975 & 1.000 & 1.000 \\
-False-Ready Rate ($n{=}27$) & 0.000 & 0.000 & 0.000 \\
-False-Block Rate ($n{=}9$) & 1.000 & 0.111 & 0.000 \\
-Unsupported Evid.\ Claims & 0.062 & 0.208 & 0.053 \\
-Decision Accuracy ($n{=}36$) & 0.750 & 0.972 & 1.000 \\
-Actionability (0-2) & 1.58 & 1.74 & 1.74 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tables/results_table}
 
-Table~\ref{tab:results} summarizes results.
-We observe three findings:
+M0 found nearly all critical gaps (0.975) but blocked every READY control, yielding 0.750 accuracy.
+M0's lower unsupported-claim fraction coincided with blocking all READY controls.
+M1 reduced false blocking to 0.111 and reached 0.972 accuracy, but its unsupported-claim fraction was 0.208.
+M2 produced zero observed false-ready and false-block decisions, 1.000 observed accuracy, and fewer unsupported claims than M1 (0.056).
+Thus, evidence grounding reduced observed false blocking while retaining zero observed false-ready approvals in this controlled pilot.
 
-\textbf{(1) Free-form review is safe but over-conservative.}
-M0 detected nearly all seeded gaps (0.975 critical recall) but blocked every change, including all READY controls (false-block = 1.000), yielding 0.750 decision accuracy.
+At model level, M2 was 12/12 correct for each model; its unsupported-claim fractions were 0.138 (Llama), 0.031 (GPT), and 0.000 (Grok), compared with 0.208, 0.083, and 0.333 under M1.
+In one M1 review of a queue-worker change with no alert evidence, Grok correctly blocked release but placed quotation marks around a paraphrased rollback statement, illustrating why decision correctness and quotation validity should be measured separately.
 
-\textbf{(2) Checklist structure improved specificity but increased unsupported claims.}
-M1 reduced false-block to 0.111 and reached 0.972 accuracy.
-However, its unsupported-evidence rate (0.208) was about four times higher than M2.
-The checklist structure encouraged models to mark gates as satisfied by paraphrasing text rather than citing verbatim evidence.
-
-\textbf{(3) Evidence grounding improved calibration by allowing READY controls while preserving zero observed false-ready approvals.}
-M2 achieved 1.000 decision accuracy with no false-ready and no false-block.
-The evidence-grounding rule forced models to cite real bundle text or honestly report missing evidence, yielding the lowest unsupported-claim rate (0.053).
-
-The main lesson is that production-readiness review should be evaluated as an evidence-auditing task, not only as a pass/fail classification task.
-
-\textbf{Qualitative example.}
-On READY control C10 (a Kubernetes HPA addition with full evidence), all three free-form reviews returned FIX-BEFORE-SHIP despite complete readiness evidence.
-RelGate approved the same case by citing the rollout plan, rollback trigger, alert rule, dashboard, owner, SLO statement, and load-test results.
-In one M1 review of C08 (a queue-worker change with empty alerting), Grok~4.3 quoted a paraphrased rollback plan as evidence, illustrating unsupported completion.
+Uncertainty is substantial: for M2, 95\% Wilson intervals are $[0,0.125]$ for 0/27 false-ready and $[0,0.299]$ for 0/9 false-block observations.
+These are zero observed errors, not zero risk.
 
 \section{Discussion and Limitations}
 
-\textbf{Relevance to ISSRE.}
-RelGate is intended as a discussion-starting project artifact: a small benchmark, prompt family, and scoring rubric for studying calibrated LLM-assisted change review.
-Production-readiness review is a reliability activity where missed gaps cause incidents and excessive blocking delays safe releases~\cite{beyer2016sre,gunawi2016bugs}.
-As cloud services increasingly adopt LLM-assisted workflows~\cite{yan2025empirical}, calibration and auditability of automated gates become reliability concerns that ISSRE is well-positioned to address.
+This controlled, synthetic pilot demonstrates feasibility, not production effectiveness.
+\newpage
+Because the scenarios and M2 policy share the same seven-gate ontology, the 1.000 decision accuracy may partly reflect instruction compliance under controlled conditions; it is not a production accuracy estimate.
+Clean READY controls omit evidence that is ambiguous, stale, conflicting, incomplete, or organization-specific.
+Each case/model/mode was observed once at temperature~0, so repeated-run robustness is unknown.
+Model versions and hosted implementations may also change; the named snapshots and frozen outputs bound these findings.
 
-\textbf{Limitations.}
-This pilot uses 12 synthetic scenarios; real production changes exhibit greater diversity and ambiguity.
-READY controls are fully specified; real readiness evidence may be ambiguous, stale, or organization-specific.
-Evidence presence does not guarantee actual production safety; it only makes the decision auditable against the provided bundle.
-Model versions evolve rapidly; results with GPT-5.5, Grok~4.3, and Llama~4~Maverick may not generalize.
-We have not yet measured latency, cost, or developer trust in deployment.
-
-\textbf{Next steps.}
-We plan to expand to 50+ scenarios from anonymized change records, conduct a developer study, and integrate RelGate into a CI/CD pipeline~\cite{ahmed2023recommending}.
+Some gates can be partially checked deterministically (e.g., presence of an alert definition or rollback field); RelGate studies the complementary evidence-to-decision problem over heterogeneous prose/configuration bundles, and a deterministic baseline remains future work.
+Future studies should use larger real/anonymized records, repeats, and expert/developer evaluation, separately measuring decision correctness, quotation validity, semantic relevance, and actual evidence adequacy.
+Such evaluation should also test whether evidence is current, mutually consistent, and sufficient under the organization's own release policy rather than merely present.
 
 \textbf{Artifact:} \url{https://github.com/lokesh0186/relgate}
+
+\section*{Acknowledgment}
+OpenAI Codex was used during camera-ready preparation to assist with language revision in Sections I--V and with implementation/review of deterministic scoring and test code used to verify the unsupported-evidence metric. The author independently verified all outputs, analyses, results, and conclusions.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
